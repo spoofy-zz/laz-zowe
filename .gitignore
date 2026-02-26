@@ -1,0 +1,13 @@
+# Compiled Lazarus / FPC output
+editor
+*.o
+*.or
+*.ppu
+*.compiled
+
+# Lazarus build cache
+lib/
+
+# Editor backup files
+*~
+*.bak

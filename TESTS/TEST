@@ -1,0 +1,46 @@
+//TESTCOB  JOB (),'TEST',CLASS=A,MSGCLASS=X,MSGLEVEL=(1,1),                     
+//             NOTIFY=&SYSUID                                                   
+//**********************************************************
+//* COBOL TEST PROGRAM                                     *
+//**********************************************************                                                                             
+//COMPILE  EXEC COBUCG,                                                         
+//         PARM.COB='FLAGW,LOAD,SUPMAP,SIZE=2048K,BUF=1024K'                    
+//COB.SYSPUNCH DD DUMMY                                                         
+//COB.SYSIN    DD *                                                             
+       IDENTIFICATION DIVISION.                                            PRIME
+       PROGRAM-ID.  'PRIMES'.                                              PRIME
+       ENVIRONMENT DIVISION.                                               PRIME
+       DATA DIVISION.                                                      PRIME
+       WORKING-STORAGE SECTION.                                            PRIME
+       77  PRVI      PIC 9(4)V9.                                                
+       77  DRUGI     PIC 9(4)V9.                                                
+       77  REZ       PIC 9(4)V9.                                                
+       77  REZ-F     PIC ZZZ9.9.                                                
+       77  REZ-T     PIC X(6).                                                  
+       PROCEDURE DIVISION.                                                      
+       MAIN-PART.                                                               
+           MOVE 12.3 TO PRVI.                                                   
+           MOVE 7.9  TO DRUGI.                                                  
+           COMPUTE REZ = PRVI + DRUGI.                                          
+           MOVE REZ TO REZ-F.                                                   
+           MOVE REZ-F TO REZ-T.                                                 
+           DISPLAY 'TEST REZULTAT'.                                             
+                      DISPLAY '******************'.                             
+           DISPLAY 'REZ      : ' REZ.                                           
+           DISPLAY 'REZ-F    : ' REZ-F.                                         
+           DISPLAY 'REZ-T    : ' REZ-T.                                         
+           DISPLAY 'MOVE NATRAG'.                                               
+           DISPLAY '******************'.                                        
+           MOVE REZ-T TO REZ.                                                   
+           DISPLAY 'REZ      : ' REZ.                                           
+           MOVE SPACES TO REZ-T.                                                
+           IF REZ-T = SPACES THEN                                               
+               DISPLAY 'REZ-T PONOVO   : ' REZ-T.                               
+           STOP RUN.                                                            
+/*                                                                              
+//COB.SYSLIB   DD DSNAME=SYS1.COBLIB,DISP=SHR                                   
+//GO.SYSOUT   DD SYSOUT=*,DCB=(RECFM=FBA,LRECL=161,BLKSIZE=16100)               
+//*GO.SYSIN    DD *                                                             
+//*    2000                                                                     
+//*                                                                             
+//                                                                              
