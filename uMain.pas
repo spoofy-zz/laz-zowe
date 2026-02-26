@@ -84,6 +84,8 @@ var
 
 implementation
 
+{$R *.lfm}
+
 const
   APP_TITLE = 'Zowe MVS Editor';
   UNTITLED  = 'Untitled';

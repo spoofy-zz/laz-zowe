@@ -52,6 +52,8 @@ type
 
 implementation
 
+{$R *.lfm}
+
 uses
   fpjson, jsonparser;
 

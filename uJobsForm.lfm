@@ -1,0 +1,7 @@
+object JobsForm: TJobsForm
+  Left = 0
+  Top = 0
+  Width = 940
+  Height = 620
+  Position = poMainFormCenter
+end
