@@ -54,6 +54,24 @@ uses
   fpjson, jsonparser;
 
 { ------------------------------------------------------------------ }
+{ On macOS, .app bundles start with a minimal PATH that omits        }
+{ /usr/local/bin, /opt/homebrew/bin, and nvm/fnm directories.       }
+{ We run every zowe call through the user's login+interactive shell  }
+{ so that ~/.bashrc / ~/.zshrc (where nvm/fnm initialise both        }
+{ 'node' and 'zowe') are sourced before the command executes.       }
+{ -i makes the shell source the rc file; without it only             }
+{ ~/.bash_profile / ~/.zprofile would be read (-l alone).            }
+{ ------------------------------------------------------------------ }
+{$IFDEF DARWIN}
+function ShellSingleQuote(const S: string): string;
+begin
+  { Wrap S in single quotes; escape any embedded single quote as '"'"' }
+  Result := #39 + StringReplace(S, #39, #39 + #34 + #39 + #34 + #39,
+                                 [rfReplaceAll]) + #39;
+end;
+{$ENDIF}
+
+{ ------------------------------------------------------------------ }
 { Core process runner – polls stdout while running to avoid deadlock  }
 { ------------------------------------------------------------------ }
 function ZoweRunCommand(const Args: array of string): TZoweResult;
@@ -65,6 +83,10 @@ var
   TmpStr: string;
   N:      LongInt;
   I:      Integer;
+  {$IFDEF DARWIN}
+  Cmd:   string;
+  Shell: string;
+  {$ENDIF}
 begin
   Result.Success  := False;
   Result.Output   := '';
@@ -73,9 +95,25 @@ begin
 
   Proc := TProcess.Create(nil);
   try
+    {$IFDEF DARWIN}
+    { Run through the user's login+interactive shell so that nvm/fnm
+      (and therefore both 'node' and 'zowe') are on PATH.
+      -i  → sources ~/.bashrc / ~/.zshrc  (nvm lives here)
+      -l  → sources ~/.bash_profile / ~/.zprofile
+      -c  → execute the following command string }
+    Cmd := 'zowe';
+    for I := 0 to High(Args) do
+      Cmd := Cmd + ' ' + ShellSingleQuote(Args[I]);
+    Shell := GetEnvironmentVariable('SHELL');
+    if Shell = '' then Shell := '/bin/bash';
+    Proc.Executable := Shell;
+    Proc.Parameters.Add('-ilc');
+    Proc.Parameters.Add(Cmd);
+    {$ELSE}
     Proc.Executable := 'zowe';
     for I := 0 to High(Args) do
       Proc.Parameters.Add(Args[I]);
+    {$ENDIF}
     { Merge stderr into stdout so we only need to read one pipe }
     Proc.Options := [poUsePipes, poStderrToOutPut];
 
