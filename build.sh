@@ -22,13 +22,13 @@ if [[ "$(uname)" == "Darwin" ]]; then
   fi
 
   mkdir -p editor.app/Contents/MacOS
-  # Use a symlink so the bundle always references the freshly built binary
-  # without needing a copy. Remove any stale file/symlink first.
+  # Copy the freshly built binary into the bundle.
+  # Remove any pre-existing file or symlink first so cp never sees
+  # source and destination as the same inode.
   TARGET="editor.app/Contents/MacOS/editor"
-  if [[ ! -L "$TARGET" ]] || [[ "$(readlink "$TARGET")" != "../../../editor" ]]; then
-    ln -sf "../../../editor" "$TARGET"
-    echo "=== Linked binary into editor.app/Contents/MacOS/ ==="
-  fi
+  rm -f "$TARGET"
+  cp editor "$TARGET"
+  echo "=== Copied binary into editor.app/Contents/MacOS/ ==="
   echo "=== Build complete ==="
   echo "=== Run with:  open editor.app  ==="
 else
