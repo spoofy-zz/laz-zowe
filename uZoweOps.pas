@@ -221,6 +221,23 @@ begin
   Result := R.Success;
 end;
 
+{ When the shell is launched with -i it may print noise to stderr
+  (e.g. "bash: no job control in this shell") which is captured together
+  with stdout via poStderrToOutPut.  This helper skips every byte before
+  the first brace or bracket so the JSON parser only sees clean JSON. }
+function StripShellNoise(const S: string): string;
+var
+  I: Integer;
+begin
+  for I := 1 to Length(S) do
+    if S[I] in ['{', '['] then
+    begin
+      Result := Copy(S, I, MaxInt);
+      Exit;
+    end;
+  Result := S;
+end;
+
 { Zowe CLI v3 wraps --response-format-json output in an envelope with
   "success", "exitCode", and "data" fields. This helper returns the
   "data" value as a JSON string. If the root is already an array it
@@ -230,7 +247,7 @@ var
   Root: TJSONData;
   Data: TJSONData;
 begin
-  Result := Trim(JsonText);
+  Result := Trim(StripShellNoise(JsonText));
   if Result = '' then Exit;
   try
     Root := GetJSON(Result);
@@ -264,9 +281,9 @@ begin
   Result := '';
   if Trim(SubmitOutput) = '' then Exit;
 
-  { Try JSON – unwrap v3 envelope first, then look for "jobid" }
+  { Try JSON – strip shell noise, unwrap v3 envelope, look for "jobid" }
   try
-    DataJson := ZoweUnwrapData(SubmitOutput);
+    DataJson := ZoweUnwrapData(StripShellNoise(SubmitOutput));
     Root := GetJSON(DataJson);
     try
       if Root is TJSONObject then

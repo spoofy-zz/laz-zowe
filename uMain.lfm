@@ -1,7 +1,234 @@
 object MainForm: TMainForm
   Left = 0
   Top = 0
-  Width = 1000
-  Height = 700
+  Caption = 'Zowe MVS Editor'
+  ClientHeight = 700
+  ClientWidth = 1000
+  Color = clBlack
   Position = poScreenCenter
+  Menu = MainMenu1
+  OnCloseQuery = FormCloseQuery
+  OnCreate = FormCreate
+  object StatusBar1: TStatusBar
+    Align = alBottom
+    SimplePanel = False
+    Panels = <
+      item
+        Text = 'Ready'
+        Width = 200
+      end
+      item
+        Text = 'File: Untitled'
+        Width = 300
+      end
+      item
+        Text = 'Syntax: –'
+        Width = 120
+      end>
+  end
+  object ToolBar1: TToolBar
+    Align = alTop
+    Height = 38
+    Images = ImageList1
+    ShowHint = True
+    Flat = True
+    ButtonWidth = 32
+    ButtonHeight = 30
+    object BtnNew: TToolButton
+      Left = 0
+      ImageIndex = 0
+      Hint = 'New  (Ctrl+N)'
+      ShowHint = True
+      OnClick = MnuFileNewClick
+    end
+    object BtnOpen: TToolButton
+      Left = 32
+      ImageIndex = 1
+      Hint = 'Open file  (Ctrl+O)'
+      ShowHint = True
+      OnClick = MnuFileOpenClick
+    end
+    object BtnSave: TToolButton
+      Left = 64
+      ImageIndex = 2
+      Hint = 'Save  (Ctrl+S)'
+      ShowHint = True
+      OnClick = MnuFileSaveClick
+    end
+    object BtnSaveAs: TToolButton
+      Left = 96
+      ImageIndex = 3
+      Hint = 'Save As  (Ctrl+Shift+S)'
+      ShowHint = True
+      OnClick = MnuFileSaveAsClick
+    end
+    object BtnSep1: TToolButton
+      Left = 128
+      Style = tbsDivider
+    end
+    object BtnDown: TToolButton
+      Left = 136
+      ImageIndex = 4
+      Hint = 'Download Dataset from MVS'
+      ShowHint = True
+      OnClick = MnuZoweDownloadClick
+    end
+    object BtnUp: TToolButton
+      Left = 168
+      ImageIndex = 5
+      Hint = 'Upload Dataset to MVS'
+      ShowHint = True
+      OnClick = MnuZoweUploadClick
+    end
+    object BtnSep2: TToolButton
+      Left = 200
+      Style = tbsDivider
+    end
+    object BtnSubmit: TToolButton
+      Left = 208
+      ImageIndex = 6
+      Hint = 'Submit JCL Job  (F5)'
+      ShowHint = True
+      OnClick = MnuZoweSubmitClick
+    end
+    object BtnSpool: TToolButton
+      Left = 240
+      ImageIndex = 7
+      Hint = 'View Jobs && Spool  (F6)'
+      ShowHint = True
+      OnClick = MnuZoweViewSpoolClick
+    end
+    object BtnSep3: TToolButton
+      Left = 272
+      Style = tbsDivider
+    end
+    object BtnCheck: TToolButton
+      Left = 280
+      ImageIndex = 8
+      Hint = 'Check Zowe Connection'
+      ShowHint = True
+      OnClick = MnuZoweCheckClick
+    end
+  end
+  object SynEdit1: TSynEdit
+    Align = alClient
+    Color = clBlack
+    Font.Color = clSilver
+    Font.Name = 'Menlo'
+    Font.Size = 11
+    Font.Style = []
+    ScrollBars = ssBoth
+    Gutter.Visible = False
+    OnChange = SynEdit1Change
+  end
+  object MainMenu1: TMainMenu
+    object MFile: TMenuItem
+      Caption = '&File'
+      object MnuFileNew: TMenuItem
+        Caption = '&New'
+        ShortCut = 8270
+        OnClick = MnuFileNewClick
+      end
+      object MnuFileOpen: TMenuItem
+        Caption = '&Open...'
+        ShortCut = 8271
+        OnClick = MnuFileOpenClick
+      end
+      object MnuFileSave: TMenuItem
+        Caption = '&Save'
+        ShortCut = 8275
+        OnClick = MnuFileSaveClick
+      end
+      object MnuFileSaveAs: TMenuItem
+        Caption = 'Save &As...'
+        ShortCut = 12371
+        OnClick = MnuFileSaveAsClick
+      end
+      object MnuFileSep1: TMenuItem
+        Caption = '-'
+      end
+      object MnuFileExit: TMenuItem
+        Caption = 'E&xit'
+        ShortCut = 16499
+        OnClick = MnuFileExitClick
+      end
+    end
+    object MEdit: TMenuItem
+      Caption = '&Edit'
+      object MnuEditCut: TMenuItem
+        Caption = 'Cu&t'
+        ShortCut = 8280
+        OnClick = MnuEditCutClick
+      end
+      object MnuEditCopy: TMenuItem
+        Caption = '&Copy'
+        ShortCut = 8259
+        OnClick = MnuEditCopyClick
+      end
+      object MnuEditPaste: TMenuItem
+        Caption = '&Paste'
+        ShortCut = 8278
+        OnClick = MnuEditPasteClick
+      end
+      object MnuEditSep1: TMenuItem
+        Caption = '-'
+      end
+      object MnuEditSelectAll: TMenuItem
+        Caption = 'Select &All'
+        ShortCut = 8257
+        OnClick = MnuEditSelectAllClick
+      end
+    end
+    object MZowe: TMenuItem
+      Caption = '&Zowe'
+      object MnuZoweDownload: TMenuItem
+        Caption = '&Download Dataset from MVS...'
+        OnClick = MnuZoweDownloadClick
+      end
+      object MnuZoweUpload: TMenuItem
+        Caption = '&Upload Dataset to MVS...'
+        OnClick = MnuZoweUploadClick
+      end
+      object MnuZoweSep1: TMenuItem
+        Caption = '-'
+      end
+      object MnuZoweSubmit: TMenuItem
+        Caption = '&Submit JCL Job'
+        ShortCut = 116
+        OnClick = MnuZoweSubmitClick
+      end
+      object MnuZoweViewSpool: TMenuItem
+        Caption = '&View Jobs && Spool...'
+        ShortCut = 117
+        OnClick = MnuZoweViewSpoolClick
+      end
+      object MnuZoweSep2: TMenuItem
+        Caption = '-'
+      end
+      object MnuZoweCheck: TMenuItem
+        Caption = 'Check Zowe &Connection'
+        OnClick = MnuZoweCheckClick
+      end
+    end
+    object MHelp: TMenuItem
+      Caption = '&Help'
+      object MnuHelpAbout: TMenuItem
+        Caption = '&About'
+        OnClick = MnuHelpAboutClick
+      end
+    end
+  end
+  object ImageList1: TImageList
+    Width = 24
+    Height = 24
+  end
+  object OpenDialog1: TOpenDialog
+    Title = 'Open file'
+    Filter = 'All files (*.*)|*.*|Text files (*.txt)|*.txt|JCL files (*.jcl)|*.jcl|COBOL (*.cbl;*.cob)|*.cbl;*.cob'
+  end
+  object SaveDialog1: TSaveDialog
+    Title = 'Save file'
+    Filter = 'All files (*.*)|*.*|Text files (*.txt)|*.txt|JCL files (*.jcl)|*.jcl|COBOL (*.cbl;*.cob)|*.cbl;*.cob'
+    Options = [ofOverwritePrompt]
+  end
 end
