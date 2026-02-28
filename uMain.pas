@@ -24,6 +24,7 @@ type
     BtnSep1:    TToolButton;
     BtnDown:    TToolButton;
     BtnUp:      TToolButton;
+    BtnUpLocal: TToolButton;
     BtnSep2:    TToolButton;
     BtnSubmit:  TToolButton;
     BtnSpool:   TToolButton;
@@ -48,10 +49,11 @@ type
     MnuEditPaste:    TMenuItem;
     MnuEditSep1:     TMenuItem;
     MnuEditSelectAll: TMenuItem;
-    MZowe:              TMenuItem;
-    MnuZoweDownload:    TMenuItem;
-    MnuZoweUpload:      TMenuItem;
-    MnuZoweSep1:        TMenuItem;
+    MZowe:                TMenuItem;
+    MnuZoweDownload:      TMenuItem;
+    MnuZoweUpload:        TMenuItem;
+    MnuZoweUploadLocal:   TMenuItem;
+    MnuZoweSep1:          TMenuItem;
     MnuZoweSubmit:      TMenuItem;
     MnuZoweViewSpool:   TMenuItem;
     MnuZoweSep2:        TMenuItem;
@@ -63,8 +65,9 @@ type
     ImageList1: TImageList;
 
     { ---- Dialogs ---- }
-    OpenDialog1: TOpenDialog;
-    SaveDialog1: TSaveDialog;
+    OpenDialog1:  TOpenDialog;
+    SaveDialog1:  TSaveDialog;
+    UploadDialog: TOpenDialog;
 
     { ---- Event handlers (referenced from LFM) ---- }
     procedure FormCreate      (Sender: TObject);
@@ -82,9 +85,10 @@ type
     procedure MnuEditPasteClick     (Sender: TObject);
     procedure MnuEditSelectAllClick (Sender: TObject);
 
-    procedure MnuZoweDownloadClick  (Sender: TObject);
-    procedure MnuZoweUploadClick    (Sender: TObject);
-    procedure MnuZoweSubmitClick    (Sender: TObject);
+    procedure MnuZoweDownloadClick      (Sender: TObject);
+    procedure MnuZoweUploadClick        (Sender: TObject);
+    procedure MnuZoweUploadLocalClick   (Sender: TObject);
+    procedure MnuZoweSubmitClick        (Sender: TObject);
     procedure MnuZoweViewSpoolClick (Sender: TObject);
     procedure MnuZoweCheckClick     (Sender: TObject);
 
@@ -92,10 +96,11 @@ type
 
   private
     { ---- State ---- }
-    FCurrentFile:    string;
-    FCurrentDataset: string;
-    FLastJobID:      string;
-    FModified:       Boolean;
+    FCurrentFile:       string;
+    FCurrentDataset:    string;
+    FLastJobID:         string;
+    FLastUploadDataset: string;   { shared "last used" for both upload actions }
+    FModified:          Boolean;
 
     { ---- Highlighters (owned by this form) ---- }
     FJCLHlr:   TSynJCLHighlighter;
@@ -148,10 +153,11 @@ begin
   PopulateImageList;
 
   { ---- Initial state ---- }
-  FCurrentFile    := '';
-  FCurrentDataset := '';
-  FLastJobID      := '';
-  FModified       := False;
+  FCurrentFile       := '';
+  FCurrentDataset    := '';
+  FLastJobID         := '';
+  FLastUploadDataset := '';
+  FModified          := False;
 
   StatusBar1.Panels[0].Text := 'Ready';
   StatusBar1.Panels[1].Text := 'File: ' + UNTITLED;
@@ -288,12 +294,26 @@ begin
   WLine(3,19,8,19,2);
   DoneIcon;
 
-  { 6 – Submit JCL: play triangle }
+  { 6 – Upload Local File: document page + upward arrow }
+  StartIcon($226644);   { dark forest green }
+  { Small page outline on the left }
+  WPoly([Point(2,10),Point(9,10),Point(9,13),Point(12,13),Point(12,22),Point(2,22)]);
+  with Bmp.Canvas do
+  begin
+    Pen.Color   := $113322;  Brush.Color := $113322;
+    Polygon([Point(9,10),Point(12,13),Point(9,13)]);   { dog-ear }
+  end;
+  { Up arrow on the right }
+  WPoly([Point(17,3),Point(21,9),Point(19,9),Point(19,17),
+         Point(15,17),Point(15,9),Point(13,9)]);
+  DoneIcon;
+
+  { 7 – Submit JCL: play triangle }
   StartIcon(C_SUBM);
   WPoly([Point(5,3),Point(5,21),Point(20,12)]);
   DoneIcon;
 
-  { 7 – View Spool: document with text lines }
+  { 8 – View Spool: document with text lines  }
   StartIcon(C_SPOOL);
   WPoly([Point(3,2),Point(16,2),Point(16,6),Point(20,6),Point(20,22),Point(3,22)]);
   BgPoly([Point(16,2),Point(20,6),Point(16,6)]);
@@ -302,7 +322,7 @@ begin
   BgFill(6,17,18,19);
   DoneIcon;
 
-  { 8 – Check connection: tick / checkmark }
+  { 9 – Check connection: tick / checkmark }
   StartIcon(C_CHECK);
   WPoly([Point(3,12),Point(8,18),Point(21,5),Point(21,9),Point(8,22),Point(3,16)]);
   DoneIcon;
@@ -542,10 +562,16 @@ var
   Dataset: string;
   TF:      string;
   R:       TZoweResult;
+  Default: string;
 begin
-  Dataset := InputBox('Upload to MVS',
-    'Enter target dataset name (e.g. HLQ.MYJCL):',
-    FCurrentDataset);
+  { Prefer the last-used upload target; fall back to the current dataset }
+  Default := FLastUploadDataset;
+  if Default = '' then Default := FCurrentDataset;
+
+  Dataset := InputBox('Upload Editor Content to MVS',
+    'Enter target dataset or PDS member' + #10 +
+    '(e.g. HLQ.DATA  or  HLQ.PDS(MEMBER)):',
+    Default);
   if Trim(Dataset) = '' then Exit;
 
   TF := TempFile('txt');
@@ -573,10 +599,52 @@ begin
     Exit;
   end;
 
-  FCurrentDataset := UpperCase(Trim(Dataset));
+  FCurrentDataset     := UpperCase(Trim(Dataset));
+  FLastUploadDataset  := FCurrentDataset;
   StatusBar1.Panels[1].Text := 'Dataset: ' + FCurrentDataset;
   StatusBar1.Panels[0].Text := 'Uploaded to ' + FCurrentDataset;
   ShowMessage('Dataset uploaded successfully to ' + FCurrentDataset);
+end;
+
+{ ------------------------------------------------------------------ }
+procedure TMainForm.MnuZoweUploadLocalClick(Sender: TObject);
+var
+  LocalFile: string;
+  Dataset:   string;
+  R:         TZoweResult;
+begin
+  { Step 1: choose local file }
+  UploadDialog.FileName := '';
+  if not UploadDialog.Execute then Exit;
+  LocalFile := UploadDialog.FileName;
+
+  { Step 2: choose MVS target, defaulting to last used name }
+  Dataset := InputBox('Upload Local File to MVS',
+    'File: ' + ExtractFileName(LocalFile) + #10 +
+    'Enter target dataset or PDS member' + #10 +
+    '(e.g. HLQ.DATA  or  HLQ.PDS(MEMBER)):',
+    FLastUploadDataset);
+  if Trim(Dataset) = '' then Exit;
+
+  Dataset := UpperCase(Trim(Dataset));
+
+  SetBusy('Uploading ' + ExtractFileName(LocalFile) + ' to ' + Dataset + '...');
+  try
+    R := ZoweUploadDataset(LocalFile, Dataset);
+  finally
+    SetReady;
+  end;
+
+  if not R.Success then
+  begin
+    ShowMessage('Upload failed:'#10 + R.ErrorMsg);
+    Exit;
+  end;
+
+  FLastUploadDataset        := Dataset;
+  StatusBar1.Panels[0].Text := 'Uploaded to ' + Dataset;
+  ShowMessage(ExtractFileName(LocalFile) + #10 +
+              'uploaded successfully to ' + Dataset);
 end;
 
 procedure TMainForm.MnuZoweSubmitClick(Sender: TObject);

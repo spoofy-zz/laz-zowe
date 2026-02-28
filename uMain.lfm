@@ -76,35 +76,42 @@ object MainForm: TMainForm
     object BtnUp: TToolButton
       Left = 168
       ImageIndex = 5
-      Hint = 'Upload Dataset to MVS'
+      Hint = 'Upload Editor Content to MVS'
       ShowHint = True
       OnClick = MnuZoweUploadClick
     end
-    object BtnSep2: TToolButton
+    object BtnUpLocal: TToolButton
       Left = 200
+      ImageIndex = 6
+      Hint = 'Upload Local File to MVS...'
+      ShowHint = True
+      OnClick = MnuZoweUploadLocalClick
+    end
+    object BtnSep2: TToolButton
+      Left = 232
       Style = tbsDivider
     end
     object BtnSubmit: TToolButton
-      Left = 208
-      ImageIndex = 6
+      Left = 240
+      ImageIndex = 7
       Hint = 'Submit JCL Job  (F5)'
       ShowHint = True
       OnClick = MnuZoweSubmitClick
     end
     object BtnSpool: TToolButton
-      Left = 240
-      ImageIndex = 7
+      Left = 272
+      ImageIndex = 8
       Hint = 'View Jobs && Spool  (F6)'
       ShowHint = True
       OnClick = MnuZoweViewSpoolClick
     end
     object BtnSep3: TToolButton
-      Left = 272
+      Left = 304
       Style = tbsDivider
     end
     object BtnCheck: TToolButton
-      Left = 280
-      ImageIndex = 8
+      Left = 312
+      ImageIndex = 9
       Hint = 'Check Zowe Connection'
       ShowHint = True
       OnClick = MnuZoweCheckClick
@@ -186,8 +193,12 @@ object MainForm: TMainForm
         OnClick = MnuZoweDownloadClick
       end
       object MnuZoweUpload: TMenuItem
-        Caption = '&Upload Dataset to MVS...'
+        Caption = '&Upload Editor Content to MVS...'
         OnClick = MnuZoweUploadClick
+      end
+      object MnuZoweUploadLocal: TMenuItem
+        Caption = 'Upload &Local File to MVS...'
+        OnClick = MnuZoweUploadLocalClick
       end
       object MnuZoweSep1: TMenuItem
         Caption = '-'
@@ -230,5 +241,9 @@ object MainForm: TMainForm
     Title = 'Save file'
     Filter = 'All files (*.*)|*.*|Text files (*.txt)|*.txt|JCL files (*.jcl)|*.jcl|COBOL (*.cbl;*.cob)|*.cbl;*.cob'
     Options = [ofOverwritePrompt]
+  end
+  object UploadDialog: TOpenDialog
+    Title = 'Select local file to upload to MVS'
+    Filter = 'All files (*.*)|*.*|Text files (*.txt)|*.txt|JCL files (*.jcl)|*.jcl|COBOL (*.cbl;*.cob)|*.cbl;*.cob'
   end
 end
