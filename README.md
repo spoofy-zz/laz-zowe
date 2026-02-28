@@ -34,10 +34,21 @@ The current syntax type is shown in the right panel of the status bar (`Syntax: 
 | Action | Shortcut |
 |---|---|
 | Download dataset from MVS | Zowe menu |
-| Upload dataset to MVS | Zowe menu |
+| Upload editor content to MVS | Zowe menu |
+| Upload local file to MVS (without opening it) | Zowe menu |
 | Submit current content as JCL job | F5 |
 | View job list and spool output | F6 |
 | Check Zowe connection | Zowe menu |
+
+#### Upload workflows
+
+**Upload editor content** (`Zowe > Upload Editor Content to MVS...`)
+Opens a dataset-name prompt and uploads whatever is currently open in the editor.
+
+**Upload local file** (`Zowe > Upload Local File to MVS...`)
+Opens a file-selector dialog to pick any local file, then a dataset-name prompt for the MVS target. The file is transferred directly — it is never opened in the editor.
+
+Both upload actions share a **last-used dataset name**: the dataset entered in either dialog is remembered and pre-filled the next time either action is invoked.
 
 A toolbar with colour-coded icons provides one-click access to all actions.
 Hovering a button shows a tooltip with the action name and keyboard shortcut.
@@ -68,7 +79,7 @@ bash build.sh Release
 open editor.app
 ```
 
-The `build.sh` script calls `lazbuild`, regenerates the `.icns` icon if needed, and symlinks the binary into `editor.app/Contents/MacOS/` so launching via `open editor.app` activates the macOS menu bar.
+The `build.sh` script calls `lazbuild`, regenerates the `.icns` icon if needed, and copies the binary into `editor.app/Contents/MacOS/` so launching via `open editor.app` activates the macOS menu bar.
 
 > **Note:** Running `./editor` directly from the terminal also works — the app activates itself via `NSApp.activateIgnoringOtherApps` at startup.
 
