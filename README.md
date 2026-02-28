@@ -39,6 +39,7 @@ The current syntax type is shown in the right panel of the status bar (`Syntax: 
 | Submit current content as JCL job | F5 |
 | View job list and spool output | F6 |
 | Check Zowe connection | Zowe menu |
+| Configure Zowe profile | Zowe menu |
 
 #### Upload workflows
 
@@ -49,6 +50,15 @@ Opens a dataset-name prompt and uploads whatever is currently open in the editor
 Opens a file-selector dialog to pick any local file, then a dataset-name prompt for the MVS target. The file is transferred directly — it is never opened in the editor.
 
 Both upload actions share a **last-used dataset name**: the dataset entered in either dialog is remembered and pre-filled the next time either action is invoked.
+
+#### Zowe profile configuration
+
+`Zowe > Configure Profile...` opens a dialog that lets you choose between the **default Zowe profile** and a **named profile** from your `zowe.config.json`.
+
+- The available profiles are read directly from `~/.zowe/zowe.config.json` and shown in a list; click one to select it, or type a name by hand.
+- The setting is saved locally to `~/.config/laz-zowe/config.ini` and restored on the next launch.
+- The active profile is shown in the right-hand panel of the status bar (`Profile: default` or `Profile: myprofile`).
+- When a named profile is active, every Zowe command is issued with `--zosmf-profile <name>`, so multiple z/OS hosts can be targeted without changing the global default.
 
 A toolbar with colour-coded icons provides one-click access to all actions.
 Hovering a button shows a tooltip with the action name and keyboard shortcut.
@@ -114,8 +124,11 @@ Refer to the [Zowe CLI documentation](https://docs.zowe.org/stable/user-guide/cl
 ├── uMain.lfm               # Full widget tree (menu, toolbar, SynEdit, statusbar)
 ├── uJobsForm.pas           # Jobs & spool viewer form
 ├── uJobsForm.lfm           # Full widget tree for job viewer
-├── uZoweOps.pas            # Zowe CLI wrapper (TProcess, pipe-polling, shell fix)
+├── uZoweOps.pas            # Zowe CLI wrapper (TProcess, pipe-polling, shell fix, profile flag)
 ├── uSynHighlighter.pas     # Custom TSynJCLHighlighter + TSynCOBOLHighlighter
+├── uConfig.pas             # Config load/save (IniFiles → ~/.config/laz-zowe/config.ini)
+├── uProfileForm.pas        # Zowe profile selection dialog
+├── uProfileForm.lfm        # Full widget tree for the profile dialog
 ├── build.sh                # Build helper + .app bundle setup
 ├── editor.app/             # macOS application bundle
 └── TESTS/

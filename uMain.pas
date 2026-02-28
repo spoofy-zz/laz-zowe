@@ -8,7 +8,7 @@ uses
   Classes, SysUtils, StrUtils, Forms, Controls, Graphics, Dialogs,
   Menus, ComCtrls, ExtCtrls, ClipBrd, LCLType, ImgList,
   SynEdit,
-  uSynHighlighter, uZoweOps, uJobsForm;
+  uSynHighlighter, uZoweOps, uJobsForm, uConfig, uProfileForm;
 
 type
   TMainForm = class(TForm)
@@ -58,6 +58,8 @@ type
     MnuZoweViewSpool:   TMenuItem;
     MnuZoweSep2:        TMenuItem;
     MnuZoweCheck:       TMenuItem;
+    MnuZoweSep3:        TMenuItem;
+    MnuZoweProfile:     TMenuItem;
     MHelp:         TMenuItem;
     MnuHelpAbout:  TMenuItem;
 
@@ -91,6 +93,7 @@ type
     procedure MnuZoweSubmitClick        (Sender: TObject);
     procedure MnuZoweViewSpoolClick (Sender: TObject);
     procedure MnuZoweCheckClick     (Sender: TObject);
+    procedure MnuZoweProfileClick   (Sender: TObject);
 
     procedure MnuHelpAboutClick (Sender: TObject);
 
@@ -102,6 +105,10 @@ type
     FLastUploadDataset: string;   { shared "last used" for both upload actions }
     FModified:          Boolean;
 
+    { ---- Zowe profile ---- }
+    FUseDefaultProfile: Boolean;
+    FActiveProfileName: string;
+
     { ---- Highlighters (owned by this form) ---- }
     FJCLHlr:   TSynJCLHighlighter;
     FCOBOLHlr: TSynCOBOLHighlighter;
@@ -110,6 +117,7 @@ type
     procedure PopulateImageList;
     procedure SetModified(AValue: Boolean);
     procedure UpdateTitle;
+    procedure UpdateProfilePanel;
     procedure SetBusy(const Msg: string);
     procedure SetReady;
     procedure DetectAndApplyHighlighter;
@@ -159,9 +167,19 @@ begin
   FLastUploadDataset := '';
   FModified          := False;
 
+  { ---- Load stored Zowe profile ---- }
+  FUseDefaultProfile := True;
+  FActiveProfileName := '';
+  LoadZoweProfile(FUseDefaultProfile, FActiveProfileName);
+  if FUseDefaultProfile then
+    ActiveZoweProfile := ''
+  else
+    ActiveZoweProfile := FActiveProfileName;
+
   StatusBar1.Panels[0].Text := 'Ready';
   StatusBar1.Panels[1].Text := 'File: ' + UNTITLED;
   StatusBar1.Panels[2].Text := 'Syntax: –';
+  UpdateProfilePanel;
 end;
 
 { ==================================================================== }
@@ -365,6 +383,14 @@ procedure TMainForm.SetReady;
 begin
   Self.Enabled := True;
   StatusBar1.Panels[0].Text := 'Ready';
+end;
+
+procedure TMainForm.UpdateProfilePanel;
+begin
+  if FUseDefaultProfile or (FActiveProfileName = '') then
+    StatusBar1.Panels[3].Text := 'Profile: default'
+  else
+    StatusBar1.Panels[3].Text := 'Profile: ' + FActiveProfileName;
 end;
 
 { ==================================================================== }
@@ -728,6 +754,29 @@ begin
     ShowMessage('Zowe connection OK.'#10 + R.Output)
   else
     ShowMessage('Zowe connection issue:'#10 + R.ErrorMsg);
+end;
+
+procedure TMainForm.MnuZoweProfileClick(Sender: TObject);
+var
+  F: TProfileForm;
+begin
+  F := TProfileForm.Create(Self);
+  try
+    F.InitSettings(FUseDefaultProfile, FActiveProfileName);
+    if F.ShowModal = mrOK then
+    begin
+      FUseDefaultProfile := F.UseDefault;
+      FActiveProfileName := F.ProfileName;
+      if FUseDefaultProfile then
+        ActiveZoweProfile := ''
+      else
+        ActiveZoweProfile := FActiveProfileName;
+      SaveZoweProfile(FUseDefaultProfile, FActiveProfileName);
+      UpdateProfilePanel;
+    end;
+  finally
+    F.Free;
+  end;
 end;
 
 { ==================================================================== }

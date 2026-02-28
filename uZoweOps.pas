@@ -25,6 +25,11 @@ type
 
   TJobInfoArray = array of TJobInfo;
 
+{ When non-empty, all mainframe commands append --zosmf-profile <name>.
+  Set this from the profile configuration dialog (uProfileForm). }
+var
+  ActiveZoweProfile: string;
+
 { Core runner }
 function ZoweRunCommand(const Args: array of string): TZoweResult;
 
@@ -104,6 +109,10 @@ begin
     Cmd := 'zowe';
     for I := 0 to High(Args) do
       Cmd := Cmd + ' ' + ShellSingleQuote(Args[I]);
+    { Append named profile when configured – skip for --version meta-commands }
+    if (ActiveZoweProfile <> '') and
+       not ((Length(Args) > 0) and (Args[0] = '--version')) then
+      Cmd := Cmd + ' --zosmf-profile ' + ShellSingleQuote(ActiveZoweProfile);
     Shell := GetEnvironmentVariable('SHELL');
     if Shell = '' then Shell := '/bin/bash';
     Proc.Executable := Shell;
@@ -113,6 +122,13 @@ begin
     Proc.Executable := 'zowe';
     for I := 0 to High(Args) do
       Proc.Parameters.Add(Args[I]);
+    { Append named profile when configured – skip for --version meta-commands }
+    if (ActiveZoweProfile <> '') and
+       not ((Length(Args) > 0) and (Args[0] = '--version')) then
+    begin
+      Proc.Parameters.Add('--zosmf-profile');
+      Proc.Parameters.Add(ActiveZoweProfile);
+    end;
     {$ENDIF}
     { Merge stderr into stdout so we only need to read one pipe }
     Proc.Options := [poUsePipes, poStderrToOutPut];

@@ -24,6 +24,10 @@ object MainForm: TMainForm
       item
         Text = 'Syntax: –'
         Width = 120
+      end
+      item
+        Text = 'Profile: default'
+        Width = 150
       end>
   end
   object ToolBar1: TToolBar
@@ -219,6 +223,13 @@ object MainForm: TMainForm
       object MnuZoweCheck: TMenuItem
         Caption = 'Check Zowe &Connection'
         OnClick = MnuZoweCheckClick
+      end
+      object MnuZoweSep3: TMenuItem
+        Caption = '-'
+      end
+      object MnuZoweProfile: TMenuItem
+        Caption = 'Configure &Profile...'
+        OnClick = MnuZoweProfileClick
       end
     end
     object MHelp: TMenuItem

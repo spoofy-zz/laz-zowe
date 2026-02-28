@@ -60,6 +60,17 @@
         <Filename Value="uSynHighlighter.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit>
+      <Unit>
+        <Filename Value="uConfig.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="uProfileForm.pas"/>
+        <IsPartOfProject Value="True"/>
+        <ComponentName Value="ProfileForm"/>
+        <HasResources Value="True"/>
+        <ResourceBaseClass Value="Form"/>
+      </Unit>
     </Units>
   </ProjectOptions>
   <CompilerOptions>
