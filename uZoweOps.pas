@@ -35,7 +35,8 @@ function ZoweRunCommand(const Args: array of string): TZoweResult;
 
 { File / dataset operations }
 function ZoweDownloadDataset(const Dataset, LocalFile: string): TZoweResult;
-function ZoweUploadDataset(const LocalFile, Dataset: string): TZoweResult;
+function ZoweUploadDataset(const LocalFile, Dataset: string;
+                           Binary: Boolean = False): TZoweResult;
 
 { Job operations }
 function ZoweSubmitLocalFile(const LocalFile: string): TZoweResult;
@@ -187,10 +188,15 @@ begin
                             Dataset, '--file', LocalFile]);
 end;
 
-function ZoweUploadDataset(const LocalFile, Dataset: string): TZoweResult;
+function ZoweUploadDataset(const LocalFile, Dataset: string;
+                           Binary: Boolean): TZoweResult;
 begin
-  Result := ZoweRunCommand(['zos-files', 'upload', 'file-to-data-set',
-                            LocalFile, Dataset]);
+  if Binary then
+    Result := ZoweRunCommand(['zos-files', 'upload', 'file-to-data-set',
+                              LocalFile, Dataset, '--binary'])
+  else
+    Result := ZoweRunCommand(['zos-files', 'upload', 'file-to-data-set',
+                              LocalFile, Dataset]);
 end;
 
 { ------------------------------------------------------------------ }
