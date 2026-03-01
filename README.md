@@ -16,6 +16,7 @@ The editor is **Lazarus form-designer friendly**: all UI components are declared
 | Open file | Ctrl+O |
 | Save | Ctrl+S |
 | Save As | Ctrl+Shift+S |
+| Clear editor (new empty document) | File menu / toolbar |
 | Cut / Copy / Paste / Select All | Ctrl+X/C/V/A |
 
 ### Syntax highlighting
@@ -47,7 +48,14 @@ The current syntax type is shown in the right panel of the status bar (`Syntax: 
 Opens a dataset-name prompt and uploads whatever is currently open in the editor.
 
 **Upload local file** (`Zowe > Upload Local File to MVS...`)
-Opens a file-selector dialog to pick any local file, then a dataset-name prompt for the MVS target. The file is transferred directly — it is never opened in the editor.
+Opens a file-selector dialog to pick any local file, then a dataset-name prompt for the MVS target, then a **transfer mode** choice:
+
+| Mode | Zowe flag | When to use |
+|---|---|---|
+| Text | *(default)* | JCL, COBOL, scripts — converts line endings |
+| Binary | `--binary` | Load modules, ZIPs, images — byte-for-byte copy |
+
+The file is transferred directly — it is never opened in the editor.
 
 Both upload actions share a **last-used dataset name**: the dataset entered in either dialog is remembered and pre-filled the next time either action is invoked.
 
@@ -59,6 +67,19 @@ Both upload actions share a **last-used dataset name**: the dataset entered in e
 - The setting is saved locally to `~/.config/laz-zowe/config.ini` and restored on the next launch.
 - The active profile is shown in the right-hand panel of the status bar (`Profile: default` or `Profile: myprofile`).
 - When a named profile is active, every Zowe command is issued with `--zosmf-profile <name>`, so multiple z/OS hosts can be targeted without changing the global default.
+
+#### Jobs & spool viewer (`F6`)
+
+Opens a two-pane window: job list on the left, spool content on the right.
+
+| Feature | How |
+|---|---|
+| Refresh job list | "Refresh Jobs" button; filter by owner with the Owner field |
+| Sort order | Jobs are always sorted ascending by Job ID |
+| Load spool file list | Click a job — the spool-file selector populates automatically |
+| View spool | Select a spool file (or "All spool") and click "View Spool" |
+| View spool quickly | Double-click a job — opens all-spool content immediately |
+| Delete a job | Select a job, click "Delete Job" or press **Delete**; a confirmation dialog is shown before `zowe zos-jobs delete job` is called; the list refreshes automatically on success |
 
 A toolbar with colour-coded icons provides one-click access to all actions.
 Hovering a button shows a tooltip with the action name and keyboard shortcut.
