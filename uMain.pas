@@ -693,6 +693,8 @@ var
   LocalFile: string;
   Dataset:   string;
   R:         TZoweResult;
+  Ans:       Integer;
+  Binary:    Boolean;
 begin
   { Step 1: choose local file }
   UploadDialog.FileName := '';
@@ -709,9 +711,20 @@ begin
 
   Dataset := UpperCase(Trim(Dataset));
 
-  SetBusy('Uploading ' + ExtractFileName(LocalFile) + ' to ' + Dataset + '...');
+  { Step 3: choose transfer mode }
+  Ans := QuestionDlg('Transfer Mode',
+    'Upload "' + ExtractFileName(LocalFile) + '" in text or binary mode?' + #10#10 +
+    'Text   – converts line endings; use for JCL, COBOL, scripts.' + #10 +
+    'Binary – uploads byte-for-byte; use for load modules, ZIPs, images.',
+    mtConfirmation,
+    [mrYes, '&Text', mrNo, '&Binary', mrCancel, 'Cancel'], 0);
+  if Ans = mrCancel then Exit;
+  Binary := (Ans = mrNo);
+
+  SetBusy('Uploading ' + ExtractFileName(LocalFile) + ' to ' + Dataset +
+          IfThen(Binary, ' (binary)...', ' (text)...'));
   try
-    R := ZoweUploadDataset(LocalFile, Dataset);
+    R := ZoweUploadDataset(LocalFile, Dataset, Binary);
   finally
     SetReady;
   end;
