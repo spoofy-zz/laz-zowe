@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils, Forms, Controls, Graphics, Dialogs,
-  StdCtrls, ComCtrls, ExtCtrls, Buttons,
+  StdCtrls, ComCtrls, ExtCtrls, Buttons, LCLType,
   uZoweOps;
 
 type
@@ -16,6 +16,7 @@ type
     OwnerLabel:  TLabel;
     OwnerEdit:   TEdit;
     RefreshBtn:  TBitBtn;
+    DeleteBtn:   TBitBtn;
 
     { ---- Bottom panel ---- }
     BottomPanel:  TPanel;
@@ -39,10 +40,13 @@ type
     SpoolMemo:   TMemo;
 
     { ---- Event handlers ---- }
-    procedure FormCreate     (Sender: TObject);
-    procedure RefreshJobs    (Sender: TObject);
-    procedure JobListSelect  (Sender: TObject; Item: TListItem; Selected: Boolean);
-    procedure ViewSpoolClick (Sender: TObject);
+    procedure FormCreate      (Sender: TObject);
+    procedure RefreshJobs     (Sender: TObject);
+    procedure JobListSelect   (Sender: TObject; Item: TListItem; Selected: Boolean);
+    procedure JobListDblClick (Sender: TObject);
+    procedure JobListKeyDown  (Sender: TObject; var Key: Word; Shift: TShiftState);
+    procedure DeleteJobClick  (Sender: TObject);
+    procedure ViewSpoolClick  (Sender: TObject);
 
   private
     FJobs: TJobInfoArray;
@@ -85,7 +89,8 @@ procedure TJobsForm.RefreshJobs(Sender: TObject);
 var
   R:           TZoweResult;
   Item:        TListItem;
-  I:           Integer;
+  I, J:        Integer;
+  Tmp:         TJobInfo;
   OwnerFilter: string;
 begin
   OwnerFilter := Trim(OwnerEdit.Text);
@@ -113,6 +118,16 @@ begin
   end;
 
   ParseJobList(R.Output, FJobs);
+
+  { Sort ascending by Job ID (bubble sort – job lists are small) }
+  for I := 0 to High(FJobs) - 1 do
+    for J := 0 to High(FJobs) - I - 1 do
+      if FJobs[J].JobID > FJobs[J + 1].JobID then
+      begin
+        Tmp         := FJobs[J];
+        FJobs[J]    := FJobs[J + 1];
+        FJobs[J + 1] := Tmp;
+      end;
 
   if Length(FJobs) = 0 then
   begin
@@ -265,6 +280,67 @@ begin
     SpoolMemo.Lines.EndUpdate;
   end;
   SetStatus(Format('Spool for %s  –  %d lines', [JobID, SpoolMemo.Lines.Count]));
+end;
+
+{ ------------------------------------------------------------------ }
+procedure TJobsForm.JobListDblClick(Sender: TObject);
+begin
+  ViewSpoolClick(Sender);
+end;
+
+{ ------------------------------------------------------------------ }
+procedure TJobsForm.JobListKeyDown(Sender: TObject; var Key: Word;
+  Shift: TShiftState);
+begin
+  if Key = VK_DELETE then
+  begin
+    Key := 0;
+    DeleteJobClick(Sender);
+  end;
+end;
+
+{ ------------------------------------------------------------------ }
+procedure TJobsForm.DeleteJobClick(Sender: TObject);
+var
+  Idx:     Integer;
+  JobID:   string;
+  JobName: string;
+  R:       TZoweResult;
+begin
+  if JobList.Selected = nil then
+  begin
+    ShowMessage('Please select a job to delete.');
+    Exit;
+  end;
+
+  Idx := Integer(PtrInt(JobList.Selected.Data));
+  if (Idx < 0) or (Idx >= Length(FJobs)) then Exit;
+
+  JobID   := FJobs[Idx].JobID;
+  JobName := FJobs[Idx].JobName;
+
+  if MessageDlg('Delete Job',
+    'Delete job ' + JobName + ' (' + JobID + ')?' + #10 +
+    'This cannot be undone.',
+    mtWarning, [mbYes, mbNo], 0) <> mrYes then Exit;
+
+  SetStatus('Deleting ' + JobID + '...');
+  Self.Enabled := False;
+  try
+    R := ZoweDeleteJob(JobID);
+  finally
+    Self.Enabled := True;
+  end;
+
+  if not R.Success then
+  begin
+    SetStatus('Delete failed');
+    ShowMessage('Failed to delete job ' + JobID + ':'#10 + R.ErrorMsg);
+    Exit;
+  end;
+
+  SetStatus(JobID + ' deleted – refreshing list...');
+  RefreshJobs(nil);
 end;
 
 { ------------------------------------------------------------------ }

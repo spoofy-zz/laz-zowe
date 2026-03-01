@@ -37,6 +37,14 @@ object JobsForm: TJobsForm
       Caption = 'Refresh Jobs'
       OnClick = RefreshJobs
     end
+    object DeleteBtn: TBitBtn
+      Left = 340
+      Top = 5
+      Width = 110
+      Height = 26
+      Caption = 'Delete Job'
+      OnClick = DeleteJobClick
+    end
   end
   object BottomPanel: TPanel
     Align = alBottom
@@ -80,6 +88,8 @@ object JobsForm: TJobsForm
       Font.Color = clSilver
       ParentFont = False
       OnSelectItem = JobListSelect
+      OnDblClick = JobListDblClick
+      OnKeyDown = JobListKeyDown
       Columns = <
         item
           Caption = 'Job Name'

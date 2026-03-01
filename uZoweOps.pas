@@ -40,6 +40,7 @@ function ZoweUploadDataset(const LocalFile, Dataset: string;
 
 { Job operations }
 function ZoweSubmitLocalFile(const LocalFile: string): TZoweResult;
+function ZoweDeleteJob(const JobID: string): TZoweResult;
 function ZoweListJobs(const OwnerFilter: string): TZoweResult;
 function ZoweViewAllSpool(const JobID: string): TZoweResult;
 function ZoweViewSpoolFile(const JobID: string; SpoolID: Integer): TZoweResult;
@@ -206,6 +207,11 @@ function ZoweSubmitLocalFile(const LocalFile: string): TZoweResult;
 begin
   Result := ZoweRunCommand(['zos-jobs', 'submit', 'local-file',
                             LocalFile, '--response-format-json']);
+end;
+
+function ZoweDeleteJob(const JobID: string): TZoweResult;
+begin
+  Result := ZoweRunCommand(['zos-jobs', 'delete', 'job', JobID]);
 end;
 
 function ZoweListJobs(const OwnerFilter: string): TZoweResult;
