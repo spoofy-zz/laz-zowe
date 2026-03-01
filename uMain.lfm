@@ -7,6 +7,7 @@ object MainForm: TMainForm
   Color = clBlack
   Position = poScreenCenter
   Menu = MainMenu1
+  OnActivate = FormActivate
   OnCloseQuery = FormCloseQuery
   OnCreate = FormCreate
   object StatusBar1: TStatusBar
@@ -66,55 +67,62 @@ object MainForm: TMainForm
       ShowHint = True
       OnClick = MnuFileSaveAsClick
     end
-    object BtnSep1: TToolButton
+    object BtnClear: TToolButton
       Left = 128
+      ImageIndex = 10
+      Hint = 'Clear Editor'
+      ShowHint = True
+      OnClick = MnuFileClearClick
+    end
+    object BtnSep1: TToolButton
+      Left = 160
       Style = tbsDivider
     end
     object BtnDown: TToolButton
-      Left = 136
+      Left = 168
       ImageIndex = 4
       Hint = 'Download Dataset from MVS'
       ShowHint = True
       OnClick = MnuZoweDownloadClick
     end
     object BtnUp: TToolButton
-      Left = 168
+      Left = 200
       ImageIndex = 5
       Hint = 'Upload Editor Content to MVS'
       ShowHint = True
       OnClick = MnuZoweUploadClick
     end
     object BtnUpLocal: TToolButton
-      Left = 200
+      Left = 232
       ImageIndex = 6
       Hint = 'Upload Local File to MVS...'
       ShowHint = True
       OnClick = MnuZoweUploadLocalClick
     end
     object BtnSep2: TToolButton
-      Left = 232
+      Left = 264
       Style = tbsDivider
     end
     object BtnSubmit: TToolButton
-      Left = 240
+      Left = 272
       ImageIndex = 7
       Hint = 'Submit JCL Job  (F5)'
       ShowHint = True
       OnClick = MnuZoweSubmitClick
     end
     object BtnSpool: TToolButton
-      Left = 272
+      Left = 304
       ImageIndex = 8
       Hint = 'View Jobs && Spool  (F6)'
       ShowHint = True
       OnClick = MnuZoweViewSpoolClick
     end
     object BtnSep3: TToolButton
-      Left = 304
+      Left = 336
       Style = tbsDivider
     end
     object BtnCheck: TToolButton
-      Left = 312
+      Left = 344
       ImageIndex = 9
       Hint = 'Check Zowe Connection'
       ShowHint = True
@@ -154,6 +162,10 @@ object MainForm: TMainForm
         Caption = 'Save &As...'
         ShortCut = 12371
         OnClick = MnuFileSaveAsClick
+      end
+      object MnuFileClear: TMenuItem
+        Caption = 'C&lear Editor'
+        OnClick = MnuFileClearClick
       end
       object MnuFileSep1: TMenuItem
         Caption = '-'

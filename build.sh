@@ -29,6 +29,16 @@ if [[ "$(uname)" == "Darwin" ]]; then
   rm -f "$TARGET"
   cp editor "$TARGET"
   echo "=== Copied binary into editor.app/Contents/MacOS/ ==="
+
+  # lazbuild regenerates Info.plist on every build without CFBundleIconFile,
+  # so patch it here to restore the icon reference for Finder and the Dock.
+  PLIST="editor.app/Contents/Info.plist"
+  /usr/libexec/PlistBuddy -c "Add :CFBundleIconFile string AppIcon" "$PLIST" 2>/dev/null \
+    || /usr/libexec/PlistBuddy -c "Set :CFBundleIconFile AppIcon" "$PLIST"
+  # Touch the bundle so Finder/LaunchServices notices the change immediately.
+  touch editor.app
+  echo "=== Patched Info.plist with CFBundleIconFile ==="
+
   echo "=== Build complete ==="
   echo "=== Run with:  open editor.app  ==="
 else

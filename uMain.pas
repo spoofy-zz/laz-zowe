@@ -21,6 +21,7 @@ type
     BtnOpen:    TToolButton;
     BtnSave:    TToolButton;
     BtnSaveAs:  TToolButton;
+    BtnClear:   TToolButton;
     BtnSep1:    TToolButton;
     BtnDown:    TToolButton;
     BtnUp:      TToolButton;
@@ -41,6 +42,7 @@ type
     MnuFileOpen:     TMenuItem;
     MnuFileSave:     TMenuItem;
     MnuFileSaveAs:   TMenuItem;
+    MnuFileClear:    TMenuItem;
     MnuFileSep1:     TMenuItem;
     MnuFileExit:     TMenuItem;
     MEdit:           TMenuItem;
@@ -73,6 +75,7 @@ type
 
     { ---- Event handlers (referenced from LFM) ---- }
     procedure FormCreate      (Sender: TObject);
+    procedure FormActivate    (Sender: TObject);
     procedure FormCloseQuery  (Sender: TObject; var CanClose: Boolean);
     procedure SynEdit1Change  (Sender: TObject);
 
@@ -80,6 +83,7 @@ type
     procedure MnuFileOpenClick    (Sender: TObject);
     procedure MnuFileSaveClick    (Sender: TObject);
     procedure MnuFileSaveAsClick  (Sender: TObject);
+    procedure MnuFileClearClick   (Sender: TObject);
     procedure MnuFileExitClick    (Sender: TObject);
 
     procedure MnuEditCutClick       (Sender: TObject);
@@ -113,6 +117,9 @@ type
     FJCLHlr:   TSynJCLHighlighter;
     FCOBOLHlr: TSynCOBOLHighlighter;
 
+    { ---- Focus restoration timer ---- }
+    FRestoreFocusTimer: TTimer;
+
     { ---- Internal helpers ---- }
     procedure PopulateImageList;
     procedure SetModified(AValue: Boolean);
@@ -121,6 +128,8 @@ type
     procedure SetBusy(const Msg: string);
     procedure SetReady;
     procedure DetectAndApplyHighlighter;
+    procedure DoRestoreFocus(Sender: TObject);
+    procedure TriggerFocusRestore;
 
     procedure DoNew;
     procedure DoOpen(const AFileName: string);
@@ -180,6 +189,18 @@ begin
   StatusBar1.Panels[1].Text := 'File: ' + UNTITLED;
   StatusBar1.Panels[2].Text := 'Syntax: –';
   UpdateProfilePanel;
+
+  { One-shot timer: restores SynEdit focus after any dialog closes.
+    Fires 80 ms after being enabled, by which time Cocoa has finished
+    resetting firstResponder following a runModal session. }
+  FRestoreFocusTimer := TTimer.Create(Self);
+  FRestoreFocusTimer.Interval := 80;
+  FRestoreFocusTimer.Enabled  := False;
+  FRestoreFocusTimer.OnTimer  := @DoRestoreFocus;
+
+  SynEdit1.SetDefaultKeystrokes;   { not called during LFM loading; must be set here }
+  ActiveControl := SynEdit1;
+  TriggerFocusRestore;   { focus editor on startup }
 end;
 
 { ==================================================================== }
@@ -344,6 +365,18 @@ begin
   StartIcon(C_CHECK);
   WPoly([Point(3,12),Point(8,18),Point(21,5),Point(21,9),Point(8,22),Point(3,16)]);
   DoneIcon;
+
+  { 10 – Clear editor: eraser body + trail lines }
+  StartIcon($AA2222);    { crimson }
+  { Eraser body (rectangle outline) }
+  WPoly([Point(2,8),Point(16,8),Point(16,21),Point(2,21)]);
+  BgFill(3,9,15,20);
+  { Band across the bottom quarter of the eraser }
+  WPoly([Point(2,16),Point(16,16),Point(16,21),Point(2,21)]);
+  { Trail marks to the right suggesting swept-away content }
+  WLine(18,11,22,11,2);
+  WLine(18,16,22,16,2);
+  DoneIcon;
 end;
 
 { ==================================================================== }
@@ -375,14 +408,33 @@ end;
 procedure TMainForm.SetBusy(const Msg: string);
 begin
   StatusBar1.Panels[0].Text := Msg;
-  Self.Enabled := False;
+  SynEdit1.ReadOnly := True;
+  Screen.Cursor := crHourglass;
   Application.ProcessMessages;
 end;
 
 procedure TMainForm.SetReady;
 begin
-  Self.Enabled := True;
+  SynEdit1.ReadOnly := False;
+  Screen.Cursor := crDefault;
   StatusBar1.Panels[0].Text := 'Ready';
+end;
+
+procedure TMainForm.FormActivate(Sender: TObject);
+begin
+  TriggerFocusRestore;
+end;
+
+procedure TMainForm.TriggerFocusRestore;
+begin
+  FRestoreFocusTimer.Enabled := True;
+end;
+
+procedure TMainForm.DoRestoreFocus(Sender: TObject);
+begin
+  FRestoreFocusTimer.Enabled := False;
+  if SynEdit1.CanFocus then
+    SynEdit1.SetFocus;
 end;
 
 procedure TMainForm.UpdateProfilePanel;
@@ -452,6 +504,7 @@ begin
     StatusBar1.Panels[0].Text := 'Loaded: ' + AFileName;
     DetectAndApplyHighlighter;
     UpdateTitle;
+    TriggerFocusRestore;
   except
     on E: Exception do
       ShowMessage('Failed to open file:'#10 + E.Message);
@@ -517,6 +570,7 @@ end;
 procedure TMainForm.MnuFileNewClick    (Sender: TObject); begin DoNew;    end;
 procedure TMainForm.MnuFileSaveClick   (Sender: TObject); begin DoSave;   end;
 procedure TMainForm.MnuFileSaveAsClick (Sender: TObject); begin DoSaveAs; end;
+procedure TMainForm.MnuFileClearClick  (Sender: TObject); begin DoNew;    end;
 procedure TMainForm.MnuFileExitClick   (Sender: TObject); begin Close;    end;
 
 procedure TMainForm.MnuFileOpenClick(Sender: TObject);
@@ -581,6 +635,7 @@ begin
   StatusBar1.Panels[0].Text := 'Downloaded: ' + FCurrentDataset;
   DetectAndApplyHighlighter;
   UpdateTitle;
+  TriggerFocusRestore;
 end;
 
 procedure TMainForm.MnuZoweUploadClick(Sender: TObject);
