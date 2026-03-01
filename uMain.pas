@@ -5,78 +5,129 @@ unit uMain;
 interface
 
 uses
-  Classes, SysUtils, Forms, Controls, Graphics, Dialogs,
-  StdCtrls, Menus, ComCtrls, ExtCtrls, ClipBrd, LCLType, ImgList,
-  uZoweOps, uJobsForm;
+  Classes, SysUtils, StrUtils, Forms, Controls, Graphics, Dialogs,
+  Menus, ComCtrls, ExtCtrls, ClipBrd, LCLType, ImgList,
+  SynEdit,
+  uSynHighlighter, uZoweOps, uJobsForm, uConfig, uProfileForm;
 
 type
   TMainForm = class(TForm)
-  private
-    { Core widgets }
-    FMemo:      TMemo;
-    FStatusBar: TStatusBar;
-
-    { Dialogs }
-    FOpenDlg: TOpenDialog;
-    FSaveDlg: TSaveDialog;
-
-    { State }
-    FCurrentFile:    string;
-    FCurrentDataset: string;
-    FLastJobID:      string;
-    FModified:       Boolean;
+    { ---- Status bar ---- }
+    StatusBar1: TStatusBar;
 
     { ---- Toolbar ---- }
-    procedure BuildToolbar;
+    ToolBar1:   TToolBar;
+    BtnNew:     TToolButton;
+    BtnOpen:    TToolButton;
+    BtnSave:    TToolButton;
+    BtnSaveAs:  TToolButton;
+    BtnSep1:    TToolButton;
+    BtnDown:    TToolButton;
+    BtnUp:      TToolButton;
+    BtnUpLocal: TToolButton;
+    BtnSep2:    TToolButton;
+    BtnSubmit:  TToolButton;
+    BtnSpool:   TToolButton;
+    BtnSep3:    TToolButton;
+    BtnCheck:   TToolButton;
 
-    { ---- Menu building ---- }
-    procedure BuildMenu;
+    { ---- Editor ---- }
+    SynEdit1: TSynEdit;
 
-    { ---- UI helpers ---- }
+    { ---- Menu ---- }
+    MainMenu1:       TMainMenu;
+    MFile:           TMenuItem;
+    MnuFileNew:      TMenuItem;
+    MnuFileOpen:     TMenuItem;
+    MnuFileSave:     TMenuItem;
+    MnuFileSaveAs:   TMenuItem;
+    MnuFileSep1:     TMenuItem;
+    MnuFileExit:     TMenuItem;
+    MEdit:           TMenuItem;
+    MnuEditCut:      TMenuItem;
+    MnuEditCopy:     TMenuItem;
+    MnuEditPaste:    TMenuItem;
+    MnuEditSep1:     TMenuItem;
+    MnuEditSelectAll: TMenuItem;
+    MZowe:                TMenuItem;
+    MnuZoweDownload:      TMenuItem;
+    MnuZoweUpload:        TMenuItem;
+    MnuZoweUploadLocal:   TMenuItem;
+    MnuZoweSep1:          TMenuItem;
+    MnuZoweSubmit:      TMenuItem;
+    MnuZoweViewSpool:   TMenuItem;
+    MnuZoweSep2:        TMenuItem;
+    MnuZoweCheck:       TMenuItem;
+    MnuZoweSep3:        TMenuItem;
+    MnuZoweProfile:     TMenuItem;
+    MHelp:         TMenuItem;
+    MnuHelpAbout:  TMenuItem;
+
+    { ---- Image list ---- }
+    ImageList1: TImageList;
+
+    { ---- Dialogs ---- }
+    OpenDialog1:  TOpenDialog;
+    SaveDialog1:  TSaveDialog;
+    UploadDialog: TOpenDialog;
+
+    { ---- Event handlers (referenced from LFM) ---- }
+    procedure FormCreate      (Sender: TObject);
+    procedure FormCloseQuery  (Sender: TObject; var CanClose: Boolean);
+    procedure SynEdit1Change  (Sender: TObject);
+
+    procedure MnuFileNewClick     (Sender: TObject);
+    procedure MnuFileOpenClick    (Sender: TObject);
+    procedure MnuFileSaveClick    (Sender: TObject);
+    procedure MnuFileSaveAsClick  (Sender: TObject);
+    procedure MnuFileExitClick    (Sender: TObject);
+
+    procedure MnuEditCutClick       (Sender: TObject);
+    procedure MnuEditCopyClick      (Sender: TObject);
+    procedure MnuEditPasteClick     (Sender: TObject);
+    procedure MnuEditSelectAllClick (Sender: TObject);
+
+    procedure MnuZoweDownloadClick      (Sender: TObject);
+    procedure MnuZoweUploadClick        (Sender: TObject);
+    procedure MnuZoweUploadLocalClick   (Sender: TObject);
+    procedure MnuZoweSubmitClick        (Sender: TObject);
+    procedure MnuZoweViewSpoolClick (Sender: TObject);
+    procedure MnuZoweCheckClick     (Sender: TObject);
+    procedure MnuZoweProfileClick   (Sender: TObject);
+
+    procedure MnuHelpAboutClick (Sender: TObject);
+
+  private
+    { ---- State ---- }
+    FCurrentFile:       string;
+    FCurrentDataset:    string;
+    FLastJobID:         string;
+    FLastUploadDataset: string;   { shared "last used" for both upload actions }
+    FModified:          Boolean;
+
+    { ---- Zowe profile ---- }
+    FUseDefaultProfile: Boolean;
+    FActiveProfileName: string;
+
+    { ---- Highlighters (owned by this form) ---- }
+    FJCLHlr:   TSynJCLHighlighter;
+    FCOBOLHlr: TSynCOBOLHighlighter;
+
+    { ---- Internal helpers ---- }
+    procedure PopulateImageList;
     procedure SetModified(AValue: Boolean);
     procedure UpdateTitle;
+    procedure UpdateProfilePanel;
     procedure SetBusy(const Msg: string);
     procedure SetReady;
+    procedure DetectAndApplyHighlighter;
 
-    { ---- File operations ---- }
     procedure DoNew;
     procedure DoOpen(const AFileName: string);
     function  DoSave: Boolean;
     function  DoSaveAs: Boolean;
     function  ConfirmSave: Boolean;
-
-    { ---- Zowe helpers ---- }
-    function TempFile(const Ext: string): string;
-
-    { ---- Menu handlers – File ---- }
-    procedure MnuFileNew    (Sender: TObject);
-    procedure MnuFileOpen   (Sender: TObject);
-    procedure MnuFileSave   (Sender: TObject);
-    procedure MnuFileSaveAs (Sender: TObject);
-    procedure MnuFileExit   (Sender: TObject);
-
-    { ---- Menu handlers – Edit ---- }
-    procedure MnuEditCut       (Sender: TObject);
-    procedure MnuEditCopy      (Sender: TObject);
-    procedure MnuEditPaste     (Sender: TObject);
-    procedure MnuEditSelectAll (Sender: TObject);
-
-    { ---- Menu handlers – Zowe ---- }
-    procedure MnuZoweDownload  (Sender: TObject);
-    procedure MnuZoweUpload    (Sender: TObject);
-    procedure MnuZoweSubmit    (Sender: TObject);
-    procedure MnuZoweViewSpool (Sender: TObject);
-    procedure MnuZoweCheck     (Sender: TObject);
-
-    { ---- Menu handlers – Help ---- }
-    procedure MnuHelpAbout (Sender: TObject);
-
-    { ---- Memo / Form events ---- }
-    procedure MemoChange     (Sender: TObject);
-    procedure FormCloseQuery (Sender: TObject; var CanClose: Boolean);
-
-  public
-    constructor Create(AOwner: TComponent); override;
+    function  TempFile(const Ext: string): string;
   end;
 
 var
@@ -90,136 +141,214 @@ const
   APP_TITLE = 'Zowe MVS Editor';
   UNTITLED  = 'Untitled';
 
-{ ================================================================== }
-constructor TMainForm.Create(AOwner: TComponent);
+{ ==================================================================== }
+{ Form creation                                                         }
+{ ==================================================================== }
+procedure TMainForm.FormCreate(Sender: TObject);
 begin
-  inherited Create(AOwner);
+  Caption  := APP_TITLE + ' – ' + UNTITLED;
+  Position := poScreenCenter;
 
-  Caption      := APP_TITLE + ' – ' + UNTITLED;
-  Width        := 1000;
-  Height       := 700;
-  Position     := poScreenCenter;
-  OnCloseQuery := @FormCloseQuery;
+  { ---- Highlighters ---- }
+  FJCLHlr   := TSynJCLHighlighter.Create(Self);
+  FCOBOLHlr := TSynCOBOLHighlighter.Create(Self);
 
-  { ---- Menu (always at top, OS-managed) ---- }
-  BuildMenu;
+  { ---- Editor appearance ---- }
+  SynEdit1.Font.Name := 'Menlo';
+  SynEdit1.Font.Size := 11;
 
-  { ---- Status bar – alBottom must be created before alTop/alClient ---- }
-  FStatusBar             := TStatusBar.Create(Self);
-  FStatusBar.Parent      := Self;
-  FStatusBar.SimplePanel := False;
-  with FStatusBar.Panels do
-  begin
-    with Add do begin Width := 200; Text := 'Ready'; end;
-    with Add do begin Width := 280; Text := 'File: ' + UNTITLED; end;
-    with Add do begin Width := 320; Text := 'Dataset: (none)'; end;
-  end;
-
-  { ---- Toolbar – alTop, sits just below the menu bar ---- }
-  BuildToolbar;
-
-  { ---- Memo – alClient, fills the remaining space ---- }
-  FMemo             := TMemo.Create(Self);
-  FMemo.Parent      := Self;
-  FMemo.Align       := alClient;
-  FMemo.ScrollBars  := ssBoth;
-  FMemo.WordWrap    := False;
-  FMemo.Font.Name   := 'Monospace';
-  FMemo.Font.Size   := 11;
-  FMemo.OnChange    := @MemoChange;
-
-  { ---- File dialogs ---- }
-  FOpenDlg        := TOpenDialog.Create(Self);
-  FOpenDlg.Title  := 'Open file';
-  FOpenDlg.Filter :=
-    'All files (*.*)|*.*|Text files (*.txt)|*.txt|' +
-    'JCL files (*.jcl)|*.jcl|COBOL (*.cbl;*.cob)|*.cbl;*.cob';
-
-  FSaveDlg         := TSaveDialog.Create(Self);
-  FSaveDlg.Title   := 'Save file';
-  FSaveDlg.Filter  := FOpenDlg.Filter;
-  FSaveDlg.Options := [ofOverwritePrompt];
+  { ---- Toolbar images (canvas-drawn) ---- }
+  PopulateImageList;
 
   { ---- Initial state ---- }
-  FCurrentFile    := '';
-  FCurrentDataset := '';
-  FLastJobID      := '';
-  FModified       := False;
+  FCurrentFile       := '';
+  FCurrentDataset    := '';
+  FLastJobID         := '';
+  FLastUploadDataset := '';
+  FModified          := False;
+
+  { ---- Load stored Zowe profile ---- }
+  FUseDefaultProfile := True;
+  FActiveProfileName := '';
+  LoadZoweProfile(FUseDefaultProfile, FActiveProfileName);
+  if FUseDefaultProfile then
+    ActiveZoweProfile := ''
+  else
+    ActiveZoweProfile := FActiveProfileName;
+
+  StatusBar1.Panels[0].Text := 'Ready';
+  StatusBar1.Panels[1].Text := 'File: ' + UNTITLED;
+  StatusBar1.Panels[2].Text := 'Syntax: –';
+  UpdateProfilePanel;
 end;
 
-{ ================================================================== }
-{ Menu construction                                                    }
-{ ================================================================== }
-procedure TMainForm.BuildMenu;
-
-  function NewItem(ACaption: string; AHandler: TNotifyEvent;
-                   AShortKey: Word = 0;
-                   AShift: TShiftState = []): TMenuItem;
-  begin
-    Result         := TMenuItem.Create(Self);
-    Result.Caption := ACaption;
-    Result.OnClick := AHandler;
-    if AShortKey <> 0 then
-      Result.ShortCut := ShortCut(AShortKey, AShift);
-  end;
-
-  function Sep: TMenuItem;
-  begin
-    Result         := TMenuItem.Create(Self);
-    Result.Caption := '-';
-  end;
-
+{ ==================================================================== }
+{ Toolbar image list – canvas-drawn mainframe-style icons               }
+{ ==================================================================== }
+procedure TMainForm.PopulateImageList;
+const
+  SZ      = 24;
+  C_NEW   = $BB7755;
+  C_OPEN  = $2266AA;
+  C_SAVE  = $AA3322;
+  C_SAVAS = $AA6600;
+  C_DOWN  = $225577;
+  C_UP    = $553366;
+  C_SUBM  = $227733;
+  C_SPOOL = $553388;
+  C_CHECK = $556677;
 var
-  MM:                     TMainMenu;
-  MFile, MEdit, MZowe, MHelp: TMenuItem;
+  Bmp:   TBitmap;
+  BgClr: TColor;
+
+  procedure StartIcon(C: TColor);
+  begin
+    BgClr := C;
+    Bmp   := TBitmap.Create;
+    Bmp.PixelFormat := pf24bit;
+    Bmp.Width  := SZ;
+    Bmp.Height := SZ;
+    with Bmp.Canvas do
+    begin
+      Brush.Color := C; Pen.Color := C;
+      FillRect(0, 0, SZ, SZ);
+      Pen.Color := clWhite; Brush.Color := clWhite;
+      Pen.Width := 1;
+    end;
+  end;
+
+  procedure DoneIcon;
+  begin
+    ImageList1.Add(Bmp, nil);
+    FreeAndNil(Bmp);
+  end;
+
+  procedure WPoly(const P: array of TPoint);
+  begin
+    with Bmp.Canvas do
+    begin Pen.Color := clWhite; Brush.Color := clWhite; Polygon(P); end;
+  end;
+
+  procedure BgFill(X1, Y1, X2, Y2: Integer);
+  begin
+    with Bmp.Canvas do
+    begin
+      Pen.Color := BgClr; Brush.Color := BgClr; FillRect(X1,Y1,X2,Y2);
+      Pen.Color := clWhite; Brush.Color := clWhite;
+    end;
+  end;
+
+  procedure BgPoly(const P: array of TPoint);
+  begin
+    with Bmp.Canvas do
+    begin
+      Pen.Color := BgClr; Brush.Color := BgClr; Polygon(P);
+      Pen.Color := clWhite; Brush.Color := clWhite;
+    end;
+  end;
+
+  procedure WLine(X1, Y1, X2, Y2, W: Integer);
+  begin
+    with Bmp.Canvas do
+    begin Pen.Color := clWhite; Pen.Width := W;
+      MoveTo(X1,Y1); LineTo(X2,Y2); Pen.Width := 1; end;
+  end;
+
 begin
-  MM := TMainMenu.Create(Self);
+  ImageList1.Width  := SZ;
+  ImageList1.Height := SZ;
+  Bmp := nil;
 
-  { ---- File ---- }
-  MFile         := TMenuItem.Create(Self);
-  MFile.Caption := '&File';
-  MFile.Add(NewItem('&New',        @MnuFileNew,    Ord('N'), [ssCtrl]));
-  MFile.Add(NewItem('&Open...',    @MnuFileOpen,   Ord('O'), [ssCtrl]));
-  MFile.Add(NewItem('&Save',       @MnuFileSave,   Ord('S'), [ssCtrl]));
-  MFile.Add(NewItem('Save &As...', @MnuFileSaveAs, Ord('S'), [ssCtrl, ssShift]));
-  MFile.Add(Sep);
-  MFile.Add(NewItem('E&xit',       @MnuFileExit,   VK_F4,   [ssAlt]));
-  MM.Items.Add(MFile);
+  { 0 – New: page with dog-eared corner }
+  StartIcon(C_NEW);
+  WPoly([Point(4,2),Point(16,2),Point(16,6),Point(20,6),Point(20,22),Point(4,22)]);
+  with Bmp.Canvas do
+  begin Pen.Color := $CCBBAA; Brush.Color := $CCBBAA;
+    Polygon([Point(16,2),Point(20,6),Point(16,6)]); end;
+  DoneIcon;
 
-  { ---- Edit ---- }
-  MEdit         := TMenuItem.Create(Self);
-  MEdit.Caption := '&Edit';
-  MEdit.Add(NewItem('Cu&t',        @MnuEditCut,       Ord('X'), [ssCtrl]));
-  MEdit.Add(NewItem('&Copy',       @MnuEditCopy,      Ord('C'), [ssCtrl]));
-  MEdit.Add(NewItem('&Paste',      @MnuEditPaste,     Ord('V'), [ssCtrl]));
-  MEdit.Add(Sep);
-  MEdit.Add(NewItem('Select &All', @MnuEditSelectAll, Ord('A'), [ssCtrl]));
-  MM.Items.Add(MEdit);
+  { 1 – Open: folder }
+  StartIcon(C_OPEN);
+  WPoly([Point(2,10),Point(2,8),Point(8,8),Point(10,10)]);
+  WPoly([Point(2,10),Point(22,10),Point(22,21),Point(2,21)]);
+  with Bmp.Canvas do
+  begin Pen.Color := $4488CC; Brush.Color := $4488CC; FillRect(3,13,21,20);
+    Pen.Color := clWhite; Brush.Color := clWhite; end;
+  DoneIcon;
 
-  { ---- Zowe ---- }
-  MZowe         := TMenuItem.Create(Self);
-  MZowe.Caption := '&Zowe';
-  MZowe.Add(NewItem('&Download Dataset from MVS...', @MnuZoweDownload));
-  MZowe.Add(NewItem('&Upload Dataset to MVS...',     @MnuZoweUpload));
-  MZowe.Add(Sep);
-  MZowe.Add(NewItem('&Submit JCL Job',               @MnuZoweSubmit,    VK_F5, []));
-  MZowe.Add(NewItem('&View Jobs && Spool...',        @MnuZoweViewSpool, VK_F6, []));
-  MZowe.Add(Sep);
-  MZowe.Add(NewItem('Check Zowe &Connection',        @MnuZoweCheck));
-  MM.Items.Add(MZowe);
+  { 2 – Save: floppy disk }
+  StartIcon(C_SAVE);
+  WPoly([Point(2,2),Point(22,2),Point(22,22),Point(2,22)]);
+  BgFill(4,13,20,21);
+  BgFill(7, 2,17, 9);
+  with Bmp.Canvas do
+  begin Pen.Color := clWhite; Brush.Color := clWhite; Ellipse(10,3,14,8); end;
+  DoneIcon;
 
-  { ---- Help ---- }
-  MHelp         := TMenuItem.Create(Self);
-  MHelp.Caption := '&Help';
-  MHelp.Add(NewItem('&About', @MnuHelpAbout));
-  MM.Items.Add(MHelp);
+  { 3 – Save As: floppy + plus notch }
+  StartIcon(C_SAVAS);
+  WPoly([Point(2,2),Point(22,2),Point(22,22),Point(2,22)]);
+  BgFill(4,13,20,21);
+  BgFill(7, 2,17, 9);
+  with Bmp.Canvas do
+  begin Pen.Color := clWhite; Brush.Color := clWhite; Ellipse(10,3,14,8); end;
+  BgFill(15,15,22,17);
+  BgFill(17,13,19,21);
+  DoneIcon;
 
-  Menu := MM;
+  { 4 – Download: down-arrow + server marks }
+  StartIcon(C_DOWN);
+  WPoly([Point(10,3),Point(14,3),Point(14,13),Point(17,13),
+         Point(12,21),Point(7,13),Point(10,13)]);
+  WLine(3,5,8,5,2);
+  WLine(3,8,8,8,2);
+  DoneIcon;
+
+  { 5 – Upload: up-arrow + server marks }
+  StartIcon(C_UP);
+  WPoly([Point(12,3),Point(17,11),Point(14,11),Point(14,21),
+         Point(10,21),Point(10,11),Point(7,11)]);
+  WLine(3,16,8,16,2);
+  WLine(3,19,8,19,2);
+  DoneIcon;
+
+  { 6 – Upload Local File: document page + upward arrow }
+  StartIcon($226644);   { dark forest green }
+  { Small page outline on the left }
+  WPoly([Point(2,10),Point(9,10),Point(9,13),Point(12,13),Point(12,22),Point(2,22)]);
+  with Bmp.Canvas do
+  begin
+    Pen.Color   := $113322;  Brush.Color := $113322;
+    Polygon([Point(9,10),Point(12,13),Point(9,13)]);   { dog-ear }
+  end;
+  { Up arrow on the right }
+  WPoly([Point(17,3),Point(21,9),Point(19,9),Point(19,17),
+         Point(15,17),Point(15,9),Point(13,9)]);
+  DoneIcon;
+
+  { 7 – Submit JCL: play triangle }
+  StartIcon(C_SUBM);
+  WPoly([Point(5,3),Point(5,21),Point(20,12)]);
+  DoneIcon;
+
+  { 8 – View Spool: document with text lines  }
+  StartIcon(C_SPOOL);
+  WPoly([Point(3,2),Point(16,2),Point(16,6),Point(20,6),Point(20,22),Point(3,22)]);
+  BgPoly([Point(16,2),Point(20,6),Point(16,6)]);
+  BgFill(6, 9,18,11);
+  BgFill(6,13,18,15);
+  BgFill(6,17,18,19);
+  DoneIcon;
+
+  { 9 – Check connection: tick / checkmark }
+  StartIcon(C_CHECK);
+  WPoly([Point(3,12),Point(8,18),Point(21,5),Point(21,9),Point(8,22),Point(3,16)]);
+  DoneIcon;
 end;
 
-{ ================================================================== }
-{ UI helpers                                                           }
-{ ================================================================== }
+{ ==================================================================== }
+{ UI helpers                                                            }
+{ ==================================================================== }
 procedure TMainForm.SetModified(AValue: Boolean);
 begin
   FModified := AValue;
@@ -245,7 +374,7 @@ end;
 
 procedure TMainForm.SetBusy(const Msg: string);
 begin
-  FStatusBar.Panels[0].Text := Msg;
+  StatusBar1.Panels[0].Text := Msg;
   Self.Enabled := False;
   Application.ProcessMessages;
 end;
@@ -253,22 +382,61 @@ end;
 procedure TMainForm.SetReady;
 begin
   Self.Enabled := True;
-  FStatusBar.Panels[0].Text := 'Ready';
+  StatusBar1.Panels[0].Text := 'Ready';
 end;
 
-{ ================================================================== }
-{ File operations                                                      }
-{ ================================================================== }
+procedure TMainForm.UpdateProfilePanel;
+begin
+  if FUseDefaultProfile or (FActiveProfileName = '') then
+    StatusBar1.Panels[3].Text := 'Profile: default'
+  else
+    StatusBar1.Panels[3].Text := 'Profile: ' + FActiveProfileName;
+end;
+
+{ ==================================================================== }
+{ Syntax detection                                                      }
+{ ==================================================================== }
+procedure TMainForm.DetectAndApplyHighlighter;
+var
+  ST: TSyntaxType;
+begin
+  ST := DetectSyntaxFromFile(
+    IfThen(FCurrentFile <> '', FCurrentFile, FCurrentDataset),
+    SynEdit1.Lines);
+
+  case ST of
+    synJCL:
+    begin
+      SynEdit1.Highlighter      := FJCLHlr;
+      StatusBar1.Panels[2].Text := 'Syntax: JCL';
+    end;
+    synCOBOL:
+    begin
+      SynEdit1.Highlighter      := FCOBOLHlr;
+      StatusBar1.Panels[2].Text := 'Syntax: COBOL';
+    end;
+    else
+    begin
+      SynEdit1.Highlighter      := nil;
+      StatusBar1.Panels[2].Text := 'Syntax: –';
+    end;
+  end;
+end;
+
+{ ==================================================================== }
+{ File operations                                                       }
+{ ==================================================================== }
 procedure TMainForm.DoNew;
 begin
   if not ConfirmSave then Exit;
-  FMemo.Clear;
-  FCurrentFile    := '';
-  FCurrentDataset := '';
-  FLastJobID      := '';
+  SynEdit1.Clear;
+  SynEdit1.Highlighter      := nil;
+  FCurrentFile              := '';
+  FCurrentDataset           := '';
+  FLastJobID                := '';
   SetModified(False);
-  FStatusBar.Panels[1].Text := 'File: ' + UNTITLED;
-  FStatusBar.Panels[2].Text := 'Dataset: (none)';
+  StatusBar1.Panels[1].Text := 'File: ' + UNTITLED;
+  StatusBar1.Panels[2].Text := 'Syntax: –';
   UpdateTitle;
 end;
 
@@ -276,11 +444,13 @@ procedure TMainForm.DoOpen(const AFileName: string);
 begin
   if not ConfirmSave then Exit;
   try
-    FMemo.Lines.LoadFromFile(AFileName);
-    FCurrentFile := AFileName;
+    SynEdit1.Lines.LoadFromFile(AFileName);
+    FCurrentFile    := AFileName;
+    FCurrentDataset := '';
     SetModified(False);
-    FStatusBar.Panels[1].Text := 'File: ' + ExtractFileName(AFileName);
-    FStatusBar.Panels[0].Text := 'Loaded: ' + AFileName;
+    StatusBar1.Panels[1].Text := 'File: ' + ExtractFileName(AFileName);
+    StatusBar1.Panels[0].Text := 'Loaded: ' + AFileName;
+    DetectAndApplyHighlighter;
     UpdateTitle;
   except
     on E: Exception do
@@ -297,9 +467,9 @@ begin
     Exit;
   end;
   try
-    FMemo.Lines.SaveToFile(FCurrentFile);
+    SynEdit1.Lines.SaveToFile(FCurrentFile);
     SetModified(False);
-    FStatusBar.Panels[0].Text := 'Saved: ' + FCurrentFile;
+    StatusBar1.Panels[0].Text := 'Saved: ' + FCurrentFile;
     Result := True;
   except
     on E: Exception do
@@ -310,10 +480,11 @@ end;
 function TMainForm.DoSaveAs: Boolean;
 begin
   Result := False;
-  FSaveDlg.FileName := ExtractFileName(FCurrentFile);
-  if not FSaveDlg.Execute then Exit;
-  FCurrentFile := FSaveDlg.FileName;
-  FStatusBar.Panels[1].Text := 'File: ' + ExtractFileName(FCurrentFile);
+  SaveDialog1.FileName := ExtractFileName(FCurrentFile);
+  if not SaveDialog1.Execute then Exit;
+  FCurrentFile := SaveDialog1.FileName;
+  StatusBar1.Panels[1].Text := 'File: ' + ExtractFileName(FCurrentFile);
+  DetectAndApplyHighlighter;
   Result := DoSave;
 end;
 
@@ -334,43 +505,39 @@ begin
   end;
 end;
 
-{ ================================================================== }
-{ Zowe helpers                                                         }
-{ ================================================================== }
 function TMainForm.TempFile(const Ext: string): string;
 begin
   Result := GetTempDir + 'zowe_ed_' +
             FormatDateTime('hhnnsszzz', Now) + '.' + Ext;
 end;
 
-{ ================================================================== }
-{ Menu handlers – File                                                 }
-{ ================================================================== }
-procedure TMainForm.MnuFileNew    (Sender: TObject); begin DoNew;    end;
-procedure TMainForm.MnuFileSave   (Sender: TObject); begin DoSave;   end;
-procedure TMainForm.MnuFileSaveAs (Sender: TObject); begin DoSaveAs; end;
-procedure TMainForm.MnuFileExit   (Sender: TObject); begin Close;    end;
+{ ==================================================================== }
+{ Event handlers – File                                                 }
+{ ==================================================================== }
+procedure TMainForm.MnuFileNewClick    (Sender: TObject); begin DoNew;    end;
+procedure TMainForm.MnuFileSaveClick   (Sender: TObject); begin DoSave;   end;
+procedure TMainForm.MnuFileSaveAsClick (Sender: TObject); begin DoSaveAs; end;
+procedure TMainForm.MnuFileExitClick   (Sender: TObject); begin Close;    end;
 
-procedure TMainForm.MnuFileOpen(Sender: TObject);
+procedure TMainForm.MnuFileOpenClick(Sender: TObject);
 begin
-  FOpenDlg.FileName := '';
-  if FOpenDlg.Execute then
-    DoOpen(FOpenDlg.FileName);
+  OpenDialog1.FileName := '';
+  if OpenDialog1.Execute then
+    DoOpen(OpenDialog1.FileName);
 end;
 
-{ ================================================================== }
-{ Menu handlers – Edit                                                 }
-{ ================================================================== }
-procedure TMainForm.MnuEditCut       (Sender: TObject); begin FMemo.CutToClipboard;    end;
-procedure TMainForm.MnuEditCopy      (Sender: TObject); begin FMemo.CopyToClipboard;   end;
-procedure TMainForm.MnuEditPaste     (Sender: TObject); begin FMemo.PasteFromClipboard; end;
-procedure TMainForm.MnuEditSelectAll (Sender: TObject); begin FMemo.SelectAll;          end;
+{ ==================================================================== }
+{ Event handlers – Edit                                                 }
+{ ==================================================================== }
+procedure TMainForm.MnuEditCutClick       (Sender: TObject); begin SynEdit1.CutToClipboard;    end;
+procedure TMainForm.MnuEditCopyClick      (Sender: TObject); begin SynEdit1.CopyToClipboard;   end;
+procedure TMainForm.MnuEditPasteClick     (Sender: TObject); begin SynEdit1.PasteFromClipboard; end;
+procedure TMainForm.MnuEditSelectAllClick (Sender: TObject); begin SynEdit1.SelectAll;          end;
 
-{ ================================================================== }
-{ Menu handlers – Zowe                                                 }
-{ ================================================================== }
-
-procedure TMainForm.MnuZoweDownload(Sender: TObject);
+{ ==================================================================== }
+{ Event handlers – Zowe                                                 }
+{ ==================================================================== }
+procedure TMainForm.MnuZoweDownloadClick(Sender: TObject);
 var
   Dataset: string;
   TF:      string;
@@ -397,7 +564,7 @@ begin
   end;
 
   try
-    FMemo.Lines.LoadFromFile(TF);
+    SynEdit1.Lines.LoadFromFile(TF);
   except
     on E: Exception do
     begin
@@ -410,26 +577,32 @@ begin
   FCurrentDataset := UpperCase(Trim(Dataset));
   FCurrentFile    := '';
   SetModified(False);
-  FStatusBar.Panels[1].Text := 'File: (MVS dataset)';
-  FStatusBar.Panels[2].Text := 'Dataset: ' + FCurrentDataset;
-  FStatusBar.Panels[0].Text := 'Downloaded: ' + FCurrentDataset;
+  StatusBar1.Panels[1].Text := 'Dataset: ' + FCurrentDataset;
+  StatusBar1.Panels[0].Text := 'Downloaded: ' + FCurrentDataset;
+  DetectAndApplyHighlighter;
   UpdateTitle;
 end;
 
-procedure TMainForm.MnuZoweUpload(Sender: TObject);
+procedure TMainForm.MnuZoweUploadClick(Sender: TObject);
 var
   Dataset: string;
   TF:      string;
   R:       TZoweResult;
+  Default: string;
 begin
-  Dataset := InputBox('Upload to MVS',
-    'Enter target dataset name (e.g. HLQ.MYJCL):',
-    FCurrentDataset);
+  { Prefer the last-used upload target; fall back to the current dataset }
+  Default := FLastUploadDataset;
+  if Default = '' then Default := FCurrentDataset;
+
+  Dataset := InputBox('Upload Editor Content to MVS',
+    'Enter target dataset or PDS member' + #10 +
+    '(e.g. HLQ.DATA  or  HLQ.PDS(MEMBER)):',
+    Default);
   if Trim(Dataset) = '' then Exit;
 
   TF := TempFile('txt');
   try
-    FMemo.Lines.SaveToFile(TF);
+    SynEdit1.Lines.SaveToFile(TF);
   except
     on E: Exception do
     begin
@@ -452,13 +625,55 @@ begin
     Exit;
   end;
 
-  FCurrentDataset := UpperCase(Trim(Dataset));
-  FStatusBar.Panels[2].Text := 'Dataset: ' + FCurrentDataset;
-  FStatusBar.Panels[0].Text := 'Uploaded to ' + FCurrentDataset;
+  FCurrentDataset     := UpperCase(Trim(Dataset));
+  FLastUploadDataset  := FCurrentDataset;
+  StatusBar1.Panels[1].Text := 'Dataset: ' + FCurrentDataset;
+  StatusBar1.Panels[0].Text := 'Uploaded to ' + FCurrentDataset;
   ShowMessage('Dataset uploaded successfully to ' + FCurrentDataset);
 end;
 
-procedure TMainForm.MnuZoweSubmit(Sender: TObject);
+{ ------------------------------------------------------------------ }
+procedure TMainForm.MnuZoweUploadLocalClick(Sender: TObject);
+var
+  LocalFile: string;
+  Dataset:   string;
+  R:         TZoweResult;
+begin
+  { Step 1: choose local file }
+  UploadDialog.FileName := '';
+  if not UploadDialog.Execute then Exit;
+  LocalFile := UploadDialog.FileName;
+
+  { Step 2: choose MVS target, defaulting to last used name }
+  Dataset := InputBox('Upload Local File to MVS',
+    'File: ' + ExtractFileName(LocalFile) + #10 +
+    'Enter target dataset or PDS member' + #10 +
+    '(e.g. HLQ.DATA  or  HLQ.PDS(MEMBER)):',
+    FLastUploadDataset);
+  if Trim(Dataset) = '' then Exit;
+
+  Dataset := UpperCase(Trim(Dataset));
+
+  SetBusy('Uploading ' + ExtractFileName(LocalFile) + ' to ' + Dataset + '...');
+  try
+    R := ZoweUploadDataset(LocalFile, Dataset);
+  finally
+    SetReady;
+  end;
+
+  if not R.Success then
+  begin
+    ShowMessage('Upload failed:'#10 + R.ErrorMsg);
+    Exit;
+  end;
+
+  FLastUploadDataset        := Dataset;
+  StatusBar1.Panels[0].Text := 'Uploaded to ' + Dataset;
+  ShowMessage(ExtractFileName(LocalFile) + #10 +
+              'uploaded successfully to ' + Dataset);
+end;
+
+procedure TMainForm.MnuZoweSubmitClick(Sender: TObject);
 var
   TF:    string;
   R:     TZoweResult;
@@ -472,7 +687,7 @@ begin
 
   TF := TempFile('jcl');
   try
-    FMemo.Lines.SaveToFile(TF);
+    SynEdit1.Lines.SaveToFile(TF);
   except
     on E: Exception do
     begin
@@ -500,7 +715,7 @@ begin
 
   if JobID <> '' then
   begin
-    FStatusBar.Panels[0].Text := 'Job submitted: ' + JobID;
+    StatusBar1.Panels[0].Text := 'Job submitted: ' + JobID;
     ShowMessage('Job submitted successfully!'#10 +
                 'Job ID: ' + JobID + #10#10 +
                 'Use Zowe > View Jobs & Spool (F6) to check the output.');
@@ -509,7 +724,7 @@ begin
     ShowMessage('Job submitted.'#10 + R.Output);
 end;
 
-procedure TMainForm.MnuZoweViewSpool(Sender: TObject);
+procedure TMainForm.MnuZoweViewSpoolClick(Sender: TObject);
 var
   F: TJobsForm;
 begin
@@ -524,7 +739,7 @@ begin
   end;
 end;
 
-procedure TMainForm.MnuZoweCheck(Sender: TObject);
+procedure TMainForm.MnuZoweCheckClick(Sender: TObject);
 var
   R: TZoweResult;
 begin
@@ -541,22 +756,45 @@ begin
     ShowMessage('Zowe connection issue:'#10 + R.ErrorMsg);
 end;
 
-{ ================================================================== }
-{ Menu handlers – Help                                                 }
-{ ================================================================== }
-procedure TMainForm.MnuHelpAbout(Sender: TObject);
+procedure TMainForm.MnuZoweProfileClick(Sender: TObject);
+var
+  F: TProfileForm;
+begin
+  F := TProfileForm.Create(Self);
+  try
+    F.InitSettings(FUseDefaultProfile, FActiveProfileName);
+    if F.ShowModal = mrOK then
+    begin
+      FUseDefaultProfile := F.UseDefault;
+      FActiveProfileName := F.ProfileName;
+      if FUseDefaultProfile then
+        ActiveZoweProfile := ''
+      else
+        ActiveZoweProfile := FActiveProfileName;
+      SaveZoweProfile(FUseDefaultProfile, FActiveProfileName);
+      UpdateProfilePanel;
+    end;
+  finally
+    F.Free;
+  end;
+end;
+
+{ ==================================================================== }
+{ Event handlers – Help                                                 }
+{ ==================================================================== }
+procedure TMainForm.MnuHelpAboutClick(Sender: TObject);
 begin
   ShowMessage(
     APP_TITLE + #10#10 +
     'A lightweight text editor with IBM z/OS (MVS) integration'#10 +
-    'via the Zowe CLI.'#10#10 +
+    'via the Zowe CLI.  Syntax highlighting for JCL and COBOL.'#10#10 +
     'Keyboard shortcuts:'#10 +
-    '  Ctrl+N  –  New file'#10 +
-    '  Ctrl+O  –  Open file'#10 +
-    '  Ctrl+S  –  Save'#10 +
-    '  Ctrl+Shift+S  –  Save As'#10 +
-    '  F5  –  Submit JCL job'#10 +
-    '  F6  –  View Jobs & Spool'#10#10 +
+    '  Ctrl+N        – New file'#10 +
+    '  Ctrl+O        – Open file'#10 +
+    '  Ctrl+S        – Save'#10 +
+    '  Ctrl+Shift+S  – Save As'#10 +
+    '  F5            – Submit JCL job'#10 +
+    '  F6            – View Jobs & Spool'#10#10 +
     'Zowe menu:'#10 +
     '  Download Dataset from MVS'#10 +
     '  Upload Dataset to MVS'#10 +
@@ -566,10 +804,10 @@ begin
   );
 end;
 
-{ ================================================================== }
-{ Memo / Form events                                                   }
-{ ================================================================== }
-procedure TMainForm.MemoChange(Sender: TObject);
+{ ==================================================================== }
+{ Form / Editor events                                                  }
+{ ==================================================================== }
+procedure TMainForm.SynEdit1Change(Sender: TObject);
 begin
   if not FModified then
     SetModified(True);
@@ -578,216 +816,6 @@ end;
 procedure TMainForm.FormCloseQuery(Sender: TObject; var CanClose: Boolean);
 begin
   CanClose := ConfirmSave;
-end;
-
-{ ================================================================== }
-{ Toolbar with canvas-drawn icons                                      }
-{ ================================================================== }
-procedure TMainForm.BuildToolbar;
-const
-  SZ = 24; { icon pixel size }
-  { Background colours (Pascal TColor = BGR) }
-  C_NEW   = $BB7755;  { warm orange-brown  }
-  C_OPEN  = $2266AA;  { medium blue        }
-  C_SAVE  = $AA3322;  { dark orange-red    }
-  C_SAVAS = $AA6600;  { amber              }
-  C_DOWN  = $225577;  { dark navy          }
-  C_UP    = $553366;  { dark violet        }
-  C_SUBM  = $227733;  { dark green         }
-  C_SPOOL = $553388;  { purple             }
-  C_CHECK = $556677;  { steel blue         }
-var
-  IL:    TImageList;
-  TB:    TToolBar;
-  Bmp:   TBitmap;
-  BgClr: TColor;
-
-  { ---- icon helpers ---- }
-  procedure StartIcon(C: TColor);
-  begin
-    BgClr := C;
-    Bmp   := TBitmap.Create;
-    Bmp.PixelFormat := pf24bit;
-    Bmp.Width  := SZ;
-    Bmp.Height := SZ;
-    with Bmp.Canvas do
-    begin
-      Brush.Color := C;
-      Pen.Color   := C;
-      FillRect(0, 0, SZ, SZ);
-      Pen.Color   := clWhite;
-      Brush.Color := clWhite;
-      Pen.Width   := 1;
-    end;
-  end;
-
-  function DoneIcon: Integer;
-  begin
-    Result := IL.Add(Bmp, nil);
-    FreeAndNil(Bmp);
-  end;
-
-  procedure WPoly(const P: array of TPoint);
-  begin
-    with Bmp.Canvas do begin Pen.Color := clWhite; Brush.Color := clWhite; Polygon(P); end;
-  end;
-
-  procedure WFill(X1, Y1, X2, Y2: Integer);
-  begin
-    with Bmp.Canvas do begin Pen.Color := clWhite; Brush.Color := clWhite; FillRect(X1,Y1,X2,Y2); end;
-  end;
-
-  procedure BgFill(X1, Y1, X2, Y2: Integer);
-  begin
-    with Bmp.Canvas do
-    begin
-      Pen.Color := BgClr; Brush.Color := BgClr; FillRect(X1,Y1,X2,Y2);
-      Pen.Color := clWhite; Brush.Color := clWhite;
-    end;
-  end;
-
-  procedure BgPoly(const P: array of TPoint);
-  begin
-    with Bmp.Canvas do
-    begin
-      Pen.Color := BgClr; Brush.Color := BgClr; Polygon(P);
-      Pen.Color := clWhite; Brush.Color := clWhite;
-    end;
-  end;
-
-  procedure WLine(X1, Y1, X2, Y2, W: Integer);
-  begin
-    with Bmp.Canvas do
-    begin Pen.Color := clWhite; Pen.Width := W; MoveTo(X1,Y1); LineTo(X2,Y2); Pen.Width := 1; end;
-  end;
-
-  { ---- toolbar helpers ---- }
-  procedure AddButton(Idx: Integer; const Hint: string; Handler: TNotifyEvent);
-  var B: TToolButton;
-  begin
-    B            := TToolButton.Create(TB);
-    B.Parent     := TB;
-    B.Style      := tbsButton;
-    B.ImageIndex := Idx;
-    B.Hint       := Hint;
-    B.ShowHint   := True;
-    B.OnClick    := Handler;
-  end;
-
-  procedure AddSep;
-  var B: TToolButton;
-  begin
-    B        := TToolButton.Create(TB);
-    B.Parent := TB;
-    B.Style  := tbsDivider;
-  end;
-
-var
-  iNew, iOpen, iSave, iSaveAs,
-  iDown, iUp, iSubm, iSpool, iCheck: Integer;
-begin
-  IL := TImageList.Create(Self);
-  IL.Width  := SZ;
-  IL.Height := SZ;
-  Bmp := nil;
-
-  { ─── New file: white page with dog-eared corner ─── }
-  StartIcon(C_NEW);
-  WPoly([Point(4,2),Point(16,2),Point(16,6),Point(20,6),Point(20,22),Point(4,22)]);
-  with Bmp.Canvas do
-  begin
-    Pen.Color := $CCBBAA; Brush.Color := $CCBBAA;
-    Polygon([Point(16,2),Point(20,6),Point(16,6)]);
-  end;
-  iNew := DoneIcon;
-
-  { ─── Open file: folder ─── }
-  StartIcon(C_OPEN);
-  WPoly([Point(2,10),Point(2,8),Point(8,8),Point(10,10)]);      { tab    }
-  WPoly([Point(2,10),Point(22,10),Point(22,21),Point(2,21)]);   { body   }
-  with Bmp.Canvas do
-  begin
-    Pen.Color := $4488CC; Brush.Color := $4488CC; FillRect(3,13,21,20); { interior }
-    Pen.Color := clWhite; Brush.Color := clWhite;
-  end;
-  iOpen := DoneIcon;
-
-  { ─── Save: floppy disk ─── }
-  StartIcon(C_SAVE);
-  WPoly([Point(2,2),Point(22,2),Point(22,22),Point(2,22)]);  { body         }
-  BgFill(4,13,20,21);                                         { label window }
-  BgFill(7, 2,17, 9);                                         { shutter slot }
-  with Bmp.Canvas do begin Pen.Color := clWhite; Brush.Color := clWhite; Ellipse(10,3,14,8); end;
-  iSave := DoneIcon;
-
-  { ─── Save As: floppy + "+" notch ─── }
-  StartIcon(C_SAVAS);
-  WPoly([Point(2,2),Point(22,2),Point(22,22),Point(2,22)]);  { body         }
-  BgFill(4,13,20,21);                                         { label window }
-  BgFill(7, 2,17, 9);                                         { shutter slot }
-  with Bmp.Canvas do begin Pen.Color := clWhite; Brush.Color := clWhite; Ellipse(10,3,14,8); end;
-  BgFill(15,15,22,17);  { "+" horizontal }
-  BgFill(17,13,19,21);  { "+" vertical   }
-  iSaveAs := DoneIcon;
-
-  { ─── Download from MVS: down-arrow + server marks ─── }
-  StartIcon(C_DOWN);
-  WPoly([Point(10,3),Point(14,3),Point(14,13),Point(17,13),
-         Point(12,21),Point(7,13),Point(10,13)]);
-  WLine(3,5,8,5,2);
-  WLine(3,8,8,8,2);
-  iDown := DoneIcon;
-
-  { ─── Upload to MVS: up-arrow + server marks ─── }
-  StartIcon(C_UP);
-  WPoly([Point(12,3),Point(17,11),Point(14,11),Point(14,21),
-         Point(10,21),Point(10,11),Point(7,11)]);
-  WLine(3,16,8,16,2);
-  WLine(3,19,8,19,2);
-  iUp := DoneIcon;
-
-  { ─── Submit JCL: play triangle ─── }
-  StartIcon(C_SUBM);
-  WPoly([Point(5,3),Point(5,21),Point(20,12)]);
-  iSubm := DoneIcon;
-
-  { ─── View Spool: document with text lines ─── }
-  StartIcon(C_SPOOL);
-  WPoly([Point(3,2),Point(16,2),Point(16,6),Point(20,6),Point(20,22),Point(3,22)]);
-  BgPoly([Point(16,2),Point(20,6),Point(16,6)]);  { fold corner }
-  BgFill(6, 9,18,11);  { text line 1 }
-  BgFill(6,13,18,15);  { text line 2 }
-  BgFill(6,17,18,19);  { text line 3 }
-  iSpool := DoneIcon;
-
-  { ─── Check connection: tick / checkmark ─── }
-  StartIcon(C_CHECK);
-  WPoly([Point(3,12),Point(8,18),Point(21,5),Point(21,9),Point(8,22),Point(3,16)]);
-  iCheck := DoneIcon;
-
-  { ════ Build the toolbar ════ }
-  TB              := TToolBar.Create(Self);
-  TB.Parent       := Self;
-  TB.Align        := alTop;
-  TB.Images       := IL;
-  TB.ShowHint     := True;
-  TB.Flat         := True;
-  TB.Height       := SZ + 14;  { container must be set explicitly on GTK2 }
-  TB.ButtonWidth  := SZ + 8;
-  TB.ButtonHeight := SZ + 6;
-
-  AddButton(iNew,    'New file  (Ctrl+N)',         @MnuFileNew);
-  AddButton(iOpen,   'Open file  (Ctrl+O)',         @MnuFileOpen);
-  AddButton(iSave,   'Save  (Ctrl+S)',              @MnuFileSave);
-  AddButton(iSaveAs, 'Save As  (Ctrl+Shift+S)',     @MnuFileSaveAs);
-  AddSep;
-  AddButton(iDown,   'Download Dataset from MVS',   @MnuZoweDownload);
-  AddButton(iUp,     'Upload Dataset to MVS',        @MnuZoweUpload);
-  AddSep;
-  AddButton(iSubm,   'Submit JCL Job  (F5)',         @MnuZoweSubmit);
-  AddButton(iSpool,  'View Jobs && Spool  (F6)',     @MnuZoweViewSpool);
-  AddSep;
-  AddButton(iCheck,  'Check Zowe Connection',        @MnuZoweCheck);
 end;
 
 end.

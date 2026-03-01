@@ -29,6 +29,9 @@
       <Item>
         <PackageName Value="LCL"/>
       </Item>
+      <Item>
+        <PackageName Value="SynEdit"/>
+      </Item>
     </RequiredPackages>
     <Units>
       <Unit>
@@ -50,6 +53,21 @@
         <Filename Value="uJobsForm.pas"/>
         <IsPartOfProject Value="True"/>
         <ComponentName Value="JobsForm"/>
+        <HasResources Value="True"/>
+        <ResourceBaseClass Value="Form"/>
+      </Unit>
+      <Unit>
+        <Filename Value="uSynHighlighter.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="uConfig.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="uProfileForm.pas"/>
+        <IsPartOfProject Value="True"/>
+        <ComponentName Value="ProfileForm"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
       </Unit>

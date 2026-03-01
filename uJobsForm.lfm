@@ -1,7 +1,152 @@
 object JobsForm: TJobsForm
   Left = 0
   Top = 0
-  Width = 940
-  Height = 620
+  Caption = 'Zowe – Jobs && Spool Viewer'
+  ClientHeight = 620
+  ClientWidth = 940
+  Color = clBlack
   Position = poMainFormCenter
+  KeyPreview = True
+  OnCreate = FormCreate
+  object ToolPanel: TPanel
+    Align = alTop
+    Height = 36
+    BevelOuter = bvNone
+    Color = clBlack
+    object OwnerLabel: TLabel
+      Left = 8
+      Top = 10
+      Width = 68
+      Height = 13
+      Caption = 'Owner filter:'
+      Font.Color = clSilver
+      ParentFont = False
+    end
+    object OwnerEdit: TEdit
+      Left = 90
+      Top = 6
+      Width = 120
+      Height = 22
+      Text = '*'
+    end
+    object RefreshBtn: TBitBtn
+      Left = 220
+      Top = 5
+      Width = 110
+      Height = 26
+      Caption = 'Refresh Jobs'
+      OnClick = RefreshJobs
+    end
+  end
+  object BottomPanel: TPanel
+    Align = alBottom
+    Height = 36
+    BevelOuter = bvNone
+    Color = clBlack
+    object StatusLabel: TLabel
+      Left = 8
+      Top = 10
+      Width = 28
+      Height = 13
+      Caption = 'Ready'
+    end
+    object CloseBtn: TBitBtn
+      Kind = bkClose
+      Caption = 'Close'
+      Width = 90
+      Height = 26
+      Top = 5
+      Anchors = [akRight, akTop]
+    end
+  end
+  object LeftPanel: TPanel
+    Align = alLeft
+    Width = 380
+    BevelOuter = bvNone
+    Color = clBlack
+    object JobsLabel: TLabel
+      Align = alTop
+      Caption = ' Jobs'
+      Height = 20
+    end
+    object JobList: TListView
+      Align = alClient
+      ViewStyle = vsReport
+      ReadOnly = True
+      RowSelect = True
+      GridLines = True
+      HideSelection = False
+      Color = clBlack
+      Font.Color = clSilver
+      ParentFont = False
+      OnSelectItem = JobListSelect
+      Columns = <
+        item
+          Caption = 'Job Name'
+          Width = 90
+        end
+        item
+          Caption = 'Job ID'
+          Width = 90
+        end
+        item
+          Caption = 'Status'
+          Width = 80
+        end
+        item
+          Caption = 'Ret Code'
+          Width = 80
+        end
+        item
+          Caption = 'Owner'
+          Width = 70
+        end>
+    end
+  end
+  object Splitter1: TSplitter
+    Align = alLeft
+    Width = 5
+  end
+  object RightPanel: TPanel
+    Align = alClient
+    BevelOuter = bvNone
+    Color = clBlack
+    object SpoolLabel: TLabel
+      Align = alTop
+      Caption = ' Spool content'
+      Height = 20
+    end
+    object SpoolStrip: TPanel
+      Align = alTop
+      Height = 32
+      BevelOuter = bvNone
+      Color = clBlack
+      object SpoolSelect: TComboBox
+        Left = 4
+        Top = 4
+        Width = 260
+        Height = 22
+        Style = csDropDownList
+      end
+      object ViewBtn: TBitBtn
+        Left = 274
+        Top = 3
+        Width = 100
+        Height = 26
+        Caption = 'View Spool'
+        OnClick = ViewSpoolClick
+      end
+    end
+    object SpoolMemo: TMemo
+      Align = alClient
+      ScrollBars = ssBoth
+      ReadOnly = True
+      WordWrap = False
+      Color = clBlack
+      Font.Color = clLime
+      Font.Name = 'Menlo'
+      Font.Size = 9
+      ParentFont = False
+    end
+  end
 end

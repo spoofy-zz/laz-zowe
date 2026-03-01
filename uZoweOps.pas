@@ -25,6 +25,11 @@ type
 
   TJobInfoArray = array of TJobInfo;
 
+{ When non-empty, all mainframe commands append --zosmf-profile <name>.
+  Set this from the profile configuration dialog (uProfileForm). }
+var
+  ActiveZoweProfile: string;
+
 { Core runner }
 function ZoweRunCommand(const Args: array of string): TZoweResult;
 
@@ -54,6 +59,24 @@ uses
   fpjson, jsonparser;
 
 { ------------------------------------------------------------------ }
+{ On macOS, .app bundles start with a minimal PATH that omits        }
+{ /usr/local/bin, /opt/homebrew/bin, and nvm/fnm directories.       }
+{ We run every zowe call through the user's login+interactive shell  }
+{ so that ~/.bashrc / ~/.zshrc (where nvm/fnm initialise both        }
+{ 'node' and 'zowe') are sourced before the command executes.       }
+{ -i makes the shell source the rc file; without it only             }
+{ ~/.bash_profile / ~/.zprofile would be read (-l alone).            }
+{ ------------------------------------------------------------------ }
+{$IFDEF DARWIN}
+function ShellSingleQuote(const S: string): string;
+begin
+  { Wrap S in single quotes; escape any embedded single quote as '"'"' }
+  Result := #39 + StringReplace(S, #39, #39 + #34 + #39 + #34 + #39,
+                                 [rfReplaceAll]) + #39;
+end;
+{$ENDIF}
+
+{ ------------------------------------------------------------------ }
 { Core process runner – polls stdout while running to avoid deadlock  }
 { ------------------------------------------------------------------ }
 function ZoweRunCommand(const Args: array of string): TZoweResult;
@@ -65,6 +88,10 @@ var
   TmpStr: string;
   N:      LongInt;
   I:      Integer;
+  {$IFDEF DARWIN}
+  Cmd:   string;
+  Shell: string;
+  {$ENDIF}
 begin
   Result.Success  := False;
   Result.Output   := '';
@@ -73,9 +100,36 @@ begin
 
   Proc := TProcess.Create(nil);
   try
+    {$IFDEF DARWIN}
+    { Run through the user's login+interactive shell so that nvm/fnm
+      (and therefore both 'node' and 'zowe') are on PATH.
+      -i  → sources ~/.bashrc / ~/.zshrc  (nvm lives here)
+      -l  → sources ~/.bash_profile / ~/.zprofile
+      -c  → execute the following command string }
+    Cmd := 'zowe';
+    for I := 0 to High(Args) do
+      Cmd := Cmd + ' ' + ShellSingleQuote(Args[I]);
+    { Append named profile when configured – skip for --version meta-commands }
+    if (ActiveZoweProfile <> '') and
+       not ((Length(Args) > 0) and (Args[0] = '--version')) then
+      Cmd := Cmd + ' --zosmf-profile ' + ShellSingleQuote(ActiveZoweProfile);
+    Shell := GetEnvironmentVariable('SHELL');
+    if Shell = '' then Shell := '/bin/bash';
+    Proc.Executable := Shell;
+    Proc.Parameters.Add('-ilc');
+    Proc.Parameters.Add(Cmd);
+    {$ELSE}
     Proc.Executable := 'zowe';
     for I := 0 to High(Args) do
       Proc.Parameters.Add(Args[I]);
+    { Append named profile when configured – skip for --version meta-commands }
+    if (ActiveZoweProfile <> '') and
+       not ((Length(Args) > 0) and (Args[0] = '--version')) then
+    begin
+      Proc.Parameters.Add('--zosmf-profile');
+      Proc.Parameters.Add(ActiveZoweProfile);
+    end;
+    {$ENDIF}
     { Merge stderr into stdout so we only need to read one pipe }
     Proc.Options := [poUsePipes, poStderrToOutPut];
 
@@ -183,6 +237,23 @@ begin
   Result := R.Success;
 end;
 
+{ When the shell is launched with -i it may print noise to stderr
+  (e.g. "bash: no job control in this shell") which is captured together
+  with stdout via poStderrToOutPut.  This helper skips every byte before
+  the first brace or bracket so the JSON parser only sees clean JSON. }
+function StripShellNoise(const S: string): string;
+var
+  I: Integer;
+begin
+  for I := 1 to Length(S) do
+    if S[I] in ['{', '['] then
+    begin
+      Result := Copy(S, I, MaxInt);
+      Exit;
+    end;
+  Result := S;
+end;
+
 { Zowe CLI v3 wraps --response-format-json output in an envelope with
   "success", "exitCode", and "data" fields. This helper returns the
   "data" value as a JSON string. If the root is already an array it
@@ -192,7 +263,7 @@ var
   Root: TJSONData;
   Data: TJSONData;
 begin
-  Result := Trim(JsonText);
+  Result := Trim(StripShellNoise(JsonText));
   if Result = '' then Exit;
   try
     Root := GetJSON(Result);
@@ -226,9 +297,9 @@ begin
   Result := '';
   if Trim(SubmitOutput) = '' then Exit;
 
-  { Try JSON – unwrap v3 envelope first, then look for "jobid" }
+  { Try JSON – strip shell noise, unwrap v3 envelope, look for "jobid" }
   try
-    DataJson := ZoweUnwrapData(SubmitOutput);
+    DataJson := ZoweUnwrapData(StripShellNoise(SubmitOutput));
     Root := GetJSON(DataJson);
     try
       if Root is TJSONObject then

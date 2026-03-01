@@ -1,0 +1,82 @@
+object ProfileForm: TProfileForm
+  Left = 0
+  Top = 0
+  Caption = 'Zowe Profile Configuration'
+  ClientHeight = 264
+  ClientWidth = 420
+  Position = poOwnerFormCenter
+  OnCreate = FormCreate
+  object LblDesc: TLabel
+    Left = 16
+    Top = 12
+    Width = 388
+    Height = 32
+    AutoSize = False
+    Caption = 'Select the Zowe profile used for all MVS operations.'
+    WordWrap = True
+  end
+  object RbDefault: TRadioButton
+    Left = 16
+    Top = 52
+    Width = 380
+    Height = 20
+    Caption = 'Use default Zowe profile'
+    Checked = True
+    OnClick = RbDefaultClick
+  end
+  object RbNamed: TRadioButton
+    Left = 16
+    Top = 80
+    Width = 164
+    Height = 20
+    Caption = 'Use named profile:'
+    OnClick = RbNamedClick
+  end
+  object EdtProfile: TEdit
+    Left = 184
+    Top = 77
+    Width = 220
+    Height = 24
+  end
+  object LblProfiles: TLabel
+    Left = 16
+    Top = 112
+    Width = 388
+    Height = 16
+    AutoSize = False
+    Caption = 'Available profiles (from ~/.zowe/zowe.config.json):'
+  end
+  object LstProfiles: TListBox
+    Left = 16
+    Top = 130
+    Width = 388
+    Height = 80
+    OnClick = LstProfilesClick
+  end
+  object BtnRefresh: TButton
+    Left = 16
+    Top = 220
+    Width = 100
+    Height = 28
+    Caption = 'Refresh List'
+    OnClick = BtnRefreshClick
+  end
+  object BtnOK: TButton
+    Left = 232
+    Top = 220
+    Width = 80
+    Height = 28
+    Caption = 'OK'
+    Default = True
+    OnClick = BtnOKClick
+  end
+  object BtnCancel: TButton
+    Left = 320
+    Top = 220
+    Width = 84
+    Height = 28
+    Cancel = True
+    Caption = 'Cancel'
+    ModalResult = 2
+  end
+end
