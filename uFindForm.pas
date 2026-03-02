@@ -81,7 +81,19 @@ begin
       Include(Opts, ssoReplace);
   end;
   Count := FSynEdit.SearchReplace(FindEdit.Text, ReplaceEdit.Text, Opts);
-  if Count = 0 then
+
+  { Wrap around: if nothing found and not a Replace All, jump to the top
+    and try once more so the whole document is always searched. }
+  if (Count = 0) and not AReplaceAll then
+  begin
+    FSynEdit.CaretXY := Point(1, 1);
+    Count := FSynEdit.SearchReplace(FindEdit.Text, ReplaceEdit.Text, Opts);
+    if Count > 0 then
+      StatusLabel.Caption := 'Search wrapped.'
+    else
+      StatusLabel.Caption := '"' + FindEdit.Text + '" not found.';
+  end
+  else if Count = 0 then
     StatusLabel.Caption := '"' + FindEdit.Text + '" not found.'
   else if AReplaceAll then
     StatusLabel.Caption := IntToStr(Count) + ' replacement(s) made.'
