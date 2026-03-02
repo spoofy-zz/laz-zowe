@@ -12,7 +12,6 @@ object MainForm: TMainForm
   OnCreate = FormCreate
   object StatusBar1: TStatusBar
     Align = alBottom
-    Color = clBtnFace
     SimplePanel = False
     Panels = <
       item
@@ -35,7 +34,6 @@ object MainForm: TMainForm
   object ToolBar1: TToolBar
     Align = alTop
     Height = 38
-    Color = clBtnFace
     Images = ImageList1
     ShowHint = True
     Flat = True
@@ -148,7 +146,6 @@ object MainForm: TMainForm
     RightEdge = 80
     RightEdgeColor = clRed
     OnChange = SynEdit1Change
-    OnStatusChange = SynEdit1StatusChange
   end
   object MainMenu1: TMainMenu
     object MFile: TMenuItem

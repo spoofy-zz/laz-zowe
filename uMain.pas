@@ -188,6 +188,15 @@ begin
   FJCLHlr   := TSynJCLHighlighter.Create(Self);
   FCOBOLHlr := TSynCOBOLHighlighter.Create(Self);
 
+  { ---- Toolbar / statusbar colour (not a published property on GTK2,
+         must be set in code to avoid "Unknown property" in the designer) ---- }
+  ToolBar1.Color  := clBtnFace;
+  StatusBar1.Color := clBtnFace;
+
+  { ---- SynEdit scroll event (TSynStatusChanges type not resolved by the
+         LFM reader at design time, so hook it here instead) ---- }
+  SynEdit1.OnStatusChange := @SynEdit1StatusChange;
+
   { ---- Editor font (load saved, fall back to Monospace 11) ---- }
   LoadEditorFont(SavedFontName, SavedFontSize);
   ApplyEditorFont(SavedFontName, SavedFontSize);
