@@ -1,6 +1,6 @@
 # Zowe MVS Editor
 
-A lightweight text editor built with **Lazarus / Free Pascal** for **macOS** (Cocoa), with native integration for IBM z/OS (MVS) mainframe systems via the [Zowe CLI](https://docs.zowe.org/stable/user-guide/cli-installcli/).
+A lightweight text editor built with **Lazarus / Free Pascal** for **Linux** (GTK2) and **macOS** (Cocoa), with native integration for IBM z/OS (MVS) mainframe systems via the [Zowe CLI](https://docs.zowe.org/stable/user-guide/cli-installcli/).
 
 The editor is **Lazarus form-designer friendly**: all UI components are declared as published fields and the `.lfm` files contain the full widget tree, so you can open the project in the Lazarus IDE and visually modify the layout without touching any code.
 
@@ -18,6 +18,26 @@ The editor is **Lazarus form-designer friendly**: all UI components are declared
 | Save As | Ctrl+Shift+S |
 | Clear editor (new empty document) | File menu / toolbar |
 | Cut / Copy / Paste / Select All | Ctrl+X/C/V/A |
+| Choose editor font | Edit → Editor Font… |
+
+### Column ruler and line-length limits
+
+A ruler strip sits between the toolbar and the editor and scrolls in sync with the text:
+
+| Marker | Column | Colour | Purpose |
+|---|---|---|---|
+| Red / salmon tick | **80** | red | Coding-convention guide (JCL/COBOL) |
+| Blue tick | **123** | blue | Hard window limit |
+
+A red vertical guide line is also drawn inside the editor at column 80 (`RightEdge`).
+
+The editor window width is constrained so it cannot be stretched beyond 123 characters wide; the constraint updates automatically when the font is changed.
+
+### Editor font
+
+**Edit → Editor Font…** opens the system font chooser filtered to fixed-pitch (monospace) fonts.  The selected font name and size are saved to `~/.config/laz-zowe/config.ini` and restored on the next launch.
+
+Default font: **Monospace 11** (maps to DejaVu Sans Mono / Liberation Mono on Linux, Menlo on macOS).
 
 ### Syntax highlighting
 
@@ -93,6 +113,7 @@ Hovering a button shows a tooltip with the action name and keyboard shortcut.
 | [Lazarus IDE](https://www.lazarus-ide.org/) / `lazbuild` | 4.2 |
 | Free Pascal Compiler (`fpc`) | 3.2.2 |
 | [Zowe CLI](https://docs.zowe.org/stable/user-guide/cli-installcli/) | 8.x (v3 release) |
+| Linux (GTK2) | Ubuntu 24.04 / x86-64 |
 | macOS (Cocoa) | macOS 15 Sequoia, Apple Silicon |
 
 ---
@@ -100,19 +121,18 @@ Hovering a button shows a tooltip with the action name and keyboard shortcut.
 ## Build
 
 ```bash
-# Debug build (default) – also wires the binary into editor.app
+# Debug build (default)
 bash build.sh
 
 # Optimised release build
 bash build.sh Release
-
-# Run as a proper .app so the menu bar and keyboard focus work correctly
-open editor.app
 ```
 
-The `build.sh` script calls `lazbuild`, regenerates the `.icns` icon if needed, and copies the binary into `editor.app/Contents/MacOS/` so launching via `open editor.app` activates the macOS menu bar.
+**Linux:** run the resulting `./editor` binary directly.
 
-> **Note:** Running `./editor` directly from the terminal also works — the app activates itself via `NSApp.activateIgnoringOtherApps` at startup.
+**macOS:** `build.sh` also copies the binary into `editor.app/Contents/MacOS/`.  Launch via `open editor.app` so the menu bar and keyboard focus work correctly.
+
+> **macOS note:** Running `./editor` directly from the terminal also works — the app activates itself via `NSApp.activateIgnoringOtherApps` at startup.
 
 ---
 
@@ -162,7 +182,8 @@ Refer to the [Zowe CLI documentation](https://docs.zowe.org/stable/user-guide/cl
 
 - **Form designer**: open `editor.lpi` in the Lazarus IDE. Both forms are fully editable in the visual designer — all components are visible and can be moved, resized, or supplemented without modifying `.pas` code.
 - **Zowe CLI v3** wraps all `--response-format-json` responses in an envelope `{"success":…,"data":…}`. The `ZoweUnwrapData()` helper in `uZoweOps.pas` handles this transparently. Shell startup noise (e.g. `bash: no job control`) is automatically stripped before JSON parsing.
-- **macOS PATH**: Zowe commands are run via `$SHELL -ilc 'zowe ...'` so that nvm/fnm and Homebrew-installed `node`/`zowe` binaries are on the PATH regardless of how the app is launched.
+- **PATH**: Zowe commands are run via `$SHELL -ilc 'zowe ...'` so that nvm/fnm and Homebrew-installed `node`/`zowe` binaries are on the PATH regardless of how the app is launched.
+- **Font**: the editor uses a monospace font (default: `Monospace` on Linux, `Menlo` on macOS). Change it via **Edit → Editor Font…**; the choice is persisted in `~/.config/laz-zowe/config.ini`.
 - The editor blocks the UI during Zowe operations. Progress is shown in the status bar. Threading can be added later if needed.
 - All temp files created during download/upload/submit are written to `$TMPDIR` and deleted automatically after use.
 

@@ -32,6 +32,9 @@ type
     BtnSep3:    TToolButton;
     BtnCheck:   TToolButton;
 
+    { ---- Ruler ---- }
+    RulerBox: TPaintBox;
+
     { ---- Editor ---- }
     SynEdit1: TSynEdit;
 
@@ -51,6 +54,8 @@ type
     MnuEditPaste:    TMenuItem;
     MnuEditSep1:     TMenuItem;
     MnuEditSelectAll: TMenuItem;
+    MnuEditSep2:     TMenuItem;
+    MnuEditFont:     TMenuItem;
     MZowe:                TMenuItem;
     MnuZoweDownload:      TMenuItem;
     MnuZoweUpload:        TMenuItem;
@@ -72,12 +77,15 @@ type
     OpenDialog1:  TOpenDialog;
     SaveDialog1:  TSaveDialog;
     UploadDialog: TOpenDialog;
+    FontDialog1:  TFontDialog;
 
     { ---- Event handlers (referenced from LFM) ---- }
     procedure FormCreate      (Sender: TObject);
     procedure FormActivate    (Sender: TObject);
     procedure FormCloseQuery  (Sender: TObject; var CanClose: Boolean);
-    procedure SynEdit1Change  (Sender: TObject);
+    procedure RulerBoxPaint         (Sender: TObject);
+    procedure SynEdit1Change        (Sender: TObject);
+    procedure SynEdit1StatusChange  (Sender: TObject; Changes: TSynStatusChanges);
 
     procedure MnuFileNewClick     (Sender: TObject);
     procedure MnuFileOpenClick    (Sender: TObject);
@@ -90,6 +98,7 @@ type
     procedure MnuEditCopyClick      (Sender: TObject);
     procedure MnuEditPasteClick     (Sender: TObject);
     procedure MnuEditSelectAllClick (Sender: TObject);
+    procedure MnuEditFontClick      (Sender: TObject);
 
     procedure MnuZoweDownloadClick      (Sender: TObject);
     procedure MnuZoweUploadClick        (Sender: TObject);
@@ -131,6 +140,9 @@ type
     procedure DoRestoreFocus(Sender: TObject);
     procedure TriggerFocusRestore;
 
+    procedure ApplyEditorFont(const AName: string; ASize: Integer);
+    procedure UpdateMaxWidth;
+
     procedure DoNew;
     procedure DoOpen(const AFileName: string);
     function  DoSave: Boolean;
@@ -154,6 +166,9 @@ const
 { Form creation                                                         }
 { ==================================================================== }
 procedure TMainForm.FormCreate(Sender: TObject);
+var
+  SavedFontName: string;
+  SavedFontSize: Integer;
 begin
   Caption  := APP_TITLE + ' – ' + UNTITLED;
   Position := poScreenCenter;
@@ -162,9 +177,9 @@ begin
   FJCLHlr   := TSynJCLHighlighter.Create(Self);
   FCOBOLHlr := TSynCOBOLHighlighter.Create(Self);
 
-  { ---- Editor appearance ---- }
-  SynEdit1.Font.Name := 'Menlo';
-  SynEdit1.Font.Size := 11;
+  { ---- Editor font (load saved, fall back to Monospace 11) ---- }
+  LoadEditorFont(SavedFontName, SavedFontSize);
+  ApplyEditorFont(SavedFontName, SavedFontSize);
 
   { ---- Toolbar images (canvas-drawn) ---- }
   PopulateImageList;
@@ -382,6 +397,34 @@ end;
 { ==================================================================== }
 { UI helpers                                                            }
 { ==================================================================== }
+procedure TMainForm.ApplyEditorFont(const AName: string; ASize: Integer);
+begin
+  SynEdit1.Font.BeginUpdate;
+  try
+    SynEdit1.Font.Name  := AName;
+    SynEdit1.Font.Size  := ASize;
+    SynEdit1.Font.Style := [];
+  finally
+    SynEdit1.Font.EndUpdate;
+  end;
+  UpdateMaxWidth;
+  RulerBox.Invalidate;
+end;
+
+procedure TMainForm.UpdateMaxWidth;
+var
+  CharW, GutterW, NonClientW: Integer;
+begin
+  CharW := SynEdit1.CharWidth;
+  if CharW <= 0 then Exit;
+  if SynEdit1.Gutter.Visible then
+    GutterW := SynEdit1.Gutter.Width
+  else
+    GutterW := 0;
+  NonClientW := Width - ClientWidth;
+  Constraints.MaxWidth := 123 * CharW + GutterW + NonClientW;
+end;
+
 procedure TMainForm.SetModified(AValue: Boolean);
 begin
   FModified := AValue;
@@ -422,6 +465,7 @@ end;
 
 procedure TMainForm.FormActivate(Sender: TObject);
 begin
+  UpdateMaxWidth;
   TriggerFocusRestore;
 end;
 
@@ -587,6 +631,15 @@ procedure TMainForm.MnuEditCutClick       (Sender: TObject); begin SynEdit1.CutT
 procedure TMainForm.MnuEditCopyClick      (Sender: TObject); begin SynEdit1.CopyToClipboard;   end;
 procedure TMainForm.MnuEditPasteClick     (Sender: TObject); begin SynEdit1.PasteFromClipboard; end;
 procedure TMainForm.MnuEditSelectAllClick (Sender: TObject); begin SynEdit1.SelectAll;          end;
+
+procedure TMainForm.MnuEditFontClick(Sender: TObject);
+begin
+  FontDialog1.Font.Assign(SynEdit1.Font);
+  if not FontDialog1.Execute then Exit;
+  ApplyEditorFont(FontDialog1.Font.Name, FontDialog1.Font.Size);
+  SaveEditorFont(SynEdit1.Font.Name, SynEdit1.Font.Size);
+  TriggerFocusRestore;
+end;
 
 { ==================================================================== }
 { Event handlers – Zowe                                                 }
@@ -870,6 +923,102 @@ begin
     '  View Jobs & Spool output'#10#10 +
     'Built with Lazarus / Free Pascal'
   );
+end;
+
+{ ==================================================================== }
+{ Column ruler                                                          }
+{ ==================================================================== }
+procedure TMainForm.RulerBoxPaint(Sender: TObject);
+const
+  COL_GUIDE = 80;    { soft convention guide – red }
+  COL_LIMIT = 123;   { hard window limit – blue    }
+var
+  CharW, GutterW, FirstCol, LastCol, Col, X, H: Integer;
+  S: string;
+  IsGuide, IsLimit: Boolean;
+begin
+  H := RulerBox.Height;
+  with RulerBox.Canvas do
+  begin
+    { Background – match toolbar / statusbar }
+    Brush.Color := clBtnFace;
+    Pen.Color   := clBtnFace;
+    FillRect(0, 0, RulerBox.Width, H);
+
+    CharW := SynEdit1.CharWidth;
+    if CharW <= 0 then Exit;
+
+    { Account for gutter if visible }
+    if SynEdit1.Gutter.Visible then
+      GutterW := SynEdit1.Gutter.Width
+    else
+      GutterW := 0;
+
+    Font.Name  := SynEdit1.Font.Name;
+    Font.Size  := 7;
+    Font.Style := [];
+
+    FirstCol := SynEdit1.LeftChar;   { 1-based first visible column }
+    LastCol  := FirstCol + ((RulerBox.Width - GutterW) div CharW) + 2;
+
+    for Col := FirstCol to LastCol do
+    begin
+      X := GutterW + (Col - FirstCol) * CharW;
+      if X > RulerBox.Width then Break;
+
+      IsGuide := (Col = COL_GUIDE);
+      IsLimit := (Col = COL_LIMIT);
+
+      if IsLimit then
+      begin
+        { Hard limit at col 123 – light blue background, blue tick }
+        Brush.Color := $00FFDCC8;   { RGB(200,220,255) light blue }
+        FillRect(X, 0, X + CharW, H - 1);
+        Pen.Color  := $00C06000;   { RGB(0,96,192) medium blue }
+        Font.Color := $00C06000;
+      end
+      else if IsGuide then
+      begin
+        { Convention guide at col 80 – light salmon, red tick }
+        Brush.Color := $00C8DCFF;   { light salmon }
+        FillRect(X, 0, X + CharW, H - 1);
+        Pen.Color  := clRed;
+        Font.Color := clRed;
+      end
+      else
+      begin
+        Brush.Color := clBtnFace;
+        Pen.Color   := $00909090;
+        Font.Color  := $00505050;
+      end;
+
+      { Tick height: long + label for special columns and multiples of 10,
+        medium for multiples of 5, short otherwise }
+      if IsGuide or IsLimit or ((Col mod 10) = 0) then
+      begin
+        MoveTo(X, H - 7); LineTo(X, H - 1);
+        S := IntToStr(Col);
+        TextOut(X - TextWidth(S) div 2 + 1, 1, S);
+      end
+      else if (Col mod 5) = 0 then
+      begin
+        MoveTo(X, H - 5); LineTo(X, H - 1);
+      end
+      else
+      begin
+        MoveTo(X, H - 3); LineTo(X, H - 1);
+      end;
+    end;
+
+    { Bottom separator line }
+    Pen.Color := $00A0A0A0;
+    MoveTo(0, H - 1); LineTo(RulerBox.Width, H - 1);
+  end;
+end;
+
+procedure TMainForm.SynEdit1StatusChange(Sender: TObject; Changes: TSynStatusChanges);
+begin
+  RulerBox.Invalidate;
 end;
 
 { ==================================================================== }

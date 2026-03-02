@@ -12,6 +12,7 @@ object MainForm: TMainForm
   OnCreate = FormCreate
   object StatusBar1: TStatusBar
     Align = alBottom
+    Color = clBtnFace
     SimplePanel = False
     Panels = <
       item
@@ -34,6 +35,7 @@ object MainForm: TMainForm
   object ToolBar1: TToolBar
     Align = alTop
     Height = 38
+    Color = clBtnFace
     Images = ImageList1
     ShowHint = True
     Flat = True
@@ -129,6 +131,11 @@ object MainForm: TMainForm
       OnClick = MnuZoweCheckClick
     end
   end
+  object RulerBox: TPaintBox
+    Align = alTop
+    Height = 20
+    OnPaint = RulerBoxPaint
+  end
   object SynEdit1: TSynEdit
     Align = alClient
     Color = clBlack
@@ -138,7 +145,10 @@ object MainForm: TMainForm
     Font.Style = []
     ScrollBars = ssBoth
     Gutter.Visible = False
+    RightEdge = 80
+    RightEdgeColor = clRed
     OnChange = SynEdit1Change
+    OnStatusChange = SynEdit1StatusChange
   end
   object MainMenu1: TMainMenu
     object MFile: TMenuItem
@@ -200,6 +210,13 @@ object MainForm: TMainForm
         Caption = 'Select &All'
         ShortCut = 8257
         OnClick = MnuEditSelectAllClick
+      end
+      object MnuEditSep2: TMenuItem
+        Caption = '-'
+      end
+      object MnuEditFont: TMenuItem
+        Caption = 'Editor &Font...'
+        OnClick = MnuEditFontClick
       end
     end
     object MZowe: TMenuItem
@@ -268,5 +285,8 @@ object MainForm: TMainForm
   object UploadDialog: TOpenDialog
     Title = 'Select local file to upload to MVS'
     Filter = 'All files (*.*)|*.*|Text files (*.txt)|*.txt|JCL files (*.jcl)|*.jcl|COBOL (*.cbl;*.cob)|*.cbl;*.cob'
+  end
+  object FontDialog1: TFontDialog
+    Options = [fdFixedPitchOnly]
   end
 end

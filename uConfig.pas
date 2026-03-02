@@ -13,6 +13,11 @@ uses
 function  LoadZoweProfile(out UseDefault: Boolean; out ProfileName: string): Boolean;
 procedure SaveZoweProfile(UseDefault: Boolean; const ProfileName: string);
 
+{ Load/save editor font from/to the same config file.
+  Defaults: FontName = 'Monospace', FontSize = 11. }
+procedure LoadEditorFont(out FontName: string; out FontSize: Integer);
+procedure SaveEditorFont(const FontName: string; FontSize: Integer);
+
 { Return a list of profile names found in ~/.zowe/zowe.config.json.
   Caller must free the returned TStringList. }
 function GetAvailableProfiles: TStringList;
@@ -26,6 +31,12 @@ const
   CFG_SECTION         = 'Zowe';
   CFG_KEY_USE_DEFAULT = 'UseDefault';
   CFG_KEY_PROFILE     = 'Profile';
+
+  CFG_SECTION_EDITOR  = 'Editor';
+  CFG_KEY_FONT_NAME   = 'FontName';
+  CFG_KEY_FONT_SIZE   = 'FontSize';
+  DEFAULT_FONT_NAME   = 'Monospace';
+  DEFAULT_FONT_SIZE   = 11;
 
 function GetConfigFilePath: string;
 begin
@@ -117,6 +128,47 @@ begin
     end;
   finally
     FileText.Free;
+  end;
+end;
+
+{ ------------------------------------------------------------------ }
+procedure LoadEditorFont(out FontName: string; out FontSize: Integer);
+var
+  Ini:  TIniFile;
+  Path: string;
+begin
+  FontName := DEFAULT_FONT_NAME;
+  FontSize := DEFAULT_FONT_SIZE;
+  Path := GetConfigFilePath;
+  if not FileExists(Path) then Exit;
+  Ini := TIniFile.Create(Path);
+  try
+    FontName := Ini.ReadString (CFG_SECTION_EDITOR, CFG_KEY_FONT_NAME, DEFAULT_FONT_NAME);
+    FontSize := Ini.ReadInteger(CFG_SECTION_EDITOR, CFG_KEY_FONT_SIZE, DEFAULT_FONT_SIZE);
+    if FontName = '' then FontName := DEFAULT_FONT_NAME;
+    if FontSize < 6   then FontSize := DEFAULT_FONT_SIZE;
+  finally
+    Ini.Free;
+  end;
+end;
+
+{ ------------------------------------------------------------------ }
+procedure SaveEditorFont(const FontName: string; FontSize: Integer);
+var
+  Ini:  TIniFile;
+  Dir:  string;
+  Path: string;
+begin
+  Path := GetConfigFilePath;
+  Dir  := ExtractFilePath(Path);
+  if not DirectoryExists(Dir) then
+    ForceDirectories(Dir);
+  Ini := TIniFile.Create(Path);
+  try
+    Ini.WriteString (CFG_SECTION_EDITOR, CFG_KEY_FONT_NAME, FontName);
+    Ini.WriteInteger(CFG_SECTION_EDITOR, CFG_KEY_FONT_SIZE, FontSize);
+  finally
+    Ini.Free;
   end;
 end;
 
