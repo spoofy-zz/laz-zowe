@@ -211,6 +211,24 @@ object MainForm: TMainForm
         ShortCut = 8257
         OnClick = MnuEditSelectAllClick
       end
+      object MnuEditSep3: TMenuItem
+        Caption = '-'
+      end
+      object MnuEditFind: TMenuItem
+        Caption = '&Find...'
+        ShortCut = 8262
+        OnClick = MnuEditFindClick
+      end
+      object MnuEditFindNext: TMenuItem
+        Caption = 'Find &Next'
+        ShortCut = 114
+        OnClick = MnuEditFindNextClick
+      end
+      object MnuEditReplace: TMenuItem
+        Caption = '&Replace...'
+        ShortCut = 8264
+        OnClick = MnuEditReplaceClick
+      end
       object MnuEditSep2: TMenuItem
         Caption = '-'
       end
@@ -288,5 +306,14 @@ object MainForm: TMainForm
   end
   object FontDialog1: TFontDialog
     Options = [fdFixedPitchOnly]
+  end
+  object FindDialog1: TFindDialog
+    Options = [frDown, frHideUpDown]
+    OnFind = FindDialog1Find
+  end
+  object ReplaceDialog1: TReplaceDialog
+    Options = [frDown, frHideUpDown]
+    OnFind = ReplaceDialog1Find
+    OnReplace = ReplaceDialog1Replace
   end
 end
