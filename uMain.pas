@@ -8,7 +8,7 @@ uses
   Classes, SysUtils, StrUtils, Forms, Controls, Graphics, Dialogs,
   Menus, ComCtrls, ExtCtrls, ClipBrd, LCLType, ImgList,
   SynEdit, SynEditTypes,
-  uSynHighlighter, uZoweOps, uJobsForm, uConfig, uProfileForm;
+  uSynHighlighter, uZoweOps, uJobsForm, uConfig, uProfileForm, uFindForm;
 
 type
   TMainForm = class(TForm)
@@ -82,8 +82,6 @@ type
     SaveDialog1:   TSaveDialog;
     UploadDialog:  TOpenDialog;
     FontDialog1:   TFontDialog;
-    FindDialog1:   TFindDialog;
-    ReplaceDialog1: TReplaceDialog;
 
     { ---- Event handlers (referenced from LFM) ---- }
     procedure FormCreate      (Sender: TObject);
@@ -108,9 +106,6 @@ type
     procedure MnuEditFindClick      (Sender: TObject);
     procedure MnuEditFindNextClick  (Sender: TObject);
     procedure MnuEditReplaceClick   (Sender: TObject);
-    procedure FindDialog1Find       (Sender: TObject);
-    procedure ReplaceDialog1Find    (Sender: TObject);
-    procedure ReplaceDialog1Replace (Sender: TObject);
 
     procedure MnuZoweDownloadClick      (Sender: TObject);
     procedure MnuZoweUploadClick        (Sender: TObject);
@@ -651,15 +646,33 @@ procedure TMainForm.MnuEditSelectAllClick (Sender: TObject); begin SynEdit1.Sele
 { ---- Find / Replace ---- }
 
 procedure TMainForm.MnuEditFindClick(Sender: TObject);
+var
+  F: TFindForm;
 begin
-  FindDialog1.Execute;
+  F := TFindForm.Create(Self);
+  try
+    F.Setup(SynEdit1, FLastFindText,
+            ssoMatchCase in FLastFindOpts,
+            ssoWholeWord in FLastFindOpts);
+    F.ShowModal;
+    if F.FindText <> '' then
+    begin
+      FLastFindText := F.FindText;
+      FLastFindOpts := [];
+      if F.MatchCase then Include(FLastFindOpts, ssoMatchCase);
+      if F.WholeWord then Include(FLastFindOpts, ssoWholeWord);
+    end;
+  finally
+    F.Free;
+  end;
+  TriggerFocusRestore;
 end;
 
 procedure TMainForm.MnuEditFindNextClick(Sender: TObject);
 begin
   if FLastFindText = '' then
   begin
-    FindDialog1.Execute;
+    MnuEditFindClick(Sender);
     Exit;
   end;
   if SynEdit1.SearchReplace(FLastFindText, '', FLastFindOpts) = 0 then
@@ -668,62 +681,7 @@ end;
 
 procedure TMainForm.MnuEditReplaceClick(Sender: TObject);
 begin
-  ReplaceDialog1.FindText := FindDialog1.FindText;
-  ReplaceDialog1.Execute;
-end;
-
-procedure TMainForm.FindDialog1Find(Sender: TObject);
-var
-  Opts: TSynSearchOptions;
-begin
-  Opts := [];
-  if frMatchCase in FindDialog1.Options then Include(Opts, ssoMatchCase);
-  if frWholeWord in FindDialog1.Options then Include(Opts, ssoWholeWord);
-  if not (frDown in FindDialog1.Options) then Include(Opts, ssoBackwards);
-  FLastFindText := FindDialog1.FindText;
-  FLastFindOpts := Opts;
-  if SynEdit1.SearchReplace(FLastFindText, '', Opts) = 0 then
-    ShowMessage('"' + FLastFindText + '" not found.');
-end;
-
-procedure TMainForm.ReplaceDialog1Find(Sender: TObject);
-var
-  Opts: TSynSearchOptions;
-begin
-  Opts := [];
-  if frMatchCase in ReplaceDialog1.Options then Include(Opts, ssoMatchCase);
-  if frWholeWord in ReplaceDialog1.Options then Include(Opts, ssoWholeWord);
-  if not (frDown in ReplaceDialog1.Options) then Include(Opts, ssoBackwards);
-  FLastFindText := ReplaceDialog1.FindText;
-  FLastFindOpts := Opts;
-  if SynEdit1.SearchReplace(FLastFindText, '', Opts) = 0 then
-    ShowMessage('"' + FLastFindText + '" not found.');
-end;
-
-procedure TMainForm.ReplaceDialog1Replace(Sender: TObject);
-var
-  Opts:  TSynSearchOptions;
-  Count: Integer;
-begin
-  Opts := [];
-  if frMatchCase  in ReplaceDialog1.Options then Include(Opts, ssoMatchCase);
-  if frWholeWord  in ReplaceDialog1.Options then Include(Opts, ssoWholeWord);
-  if not (frDown  in ReplaceDialog1.Options) then Include(Opts, ssoBackwards);
-  if frReplaceAll in ReplaceDialog1.Options then
-  begin
-    Include(Opts, ssoReplaceAll);
-    Include(Opts, ssoEntireScope);
-  end
-  else
-    Include(Opts, ssoReplace);
-  FLastFindText := ReplaceDialog1.FindText;
-  FLastFindOpts := Opts - [ssoReplace, ssoReplaceAll, ssoEntireScope];
-  Count := SynEdit1.SearchReplace(
-    ReplaceDialog1.FindText, ReplaceDialog1.ReplaceText, Opts);
-  if Count = 0 then
-    ShowMessage('"' + ReplaceDialog1.FindText + '" not found.')
-  else if frReplaceAll in ReplaceDialog1.Options then
-    ShowMessage(IntToStr(Count) + ' replacement(s) made.');
+  MnuEditFindClick(Sender);
 end;
 
 procedure TMainForm.MnuEditFontClick(Sender: TObject);

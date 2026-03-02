@@ -307,13 +307,4 @@ object MainForm: TMainForm
   object FontDialog1: TFontDialog
     Options = [fdFixedPitchOnly]
   end
-  object FindDialog1: TFindDialog
-    Options = [frDown, frHideUpDown]
-    OnFind = FindDialog1Find
-  end
-  object ReplaceDialog1: TReplaceDialog
-    Options = [frDown, frHideUpDown]
-    OnFind = ReplaceDialog1Find
-    OnReplace = ReplaceDialog1Replace
-  end
 end
