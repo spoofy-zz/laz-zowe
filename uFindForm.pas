@@ -53,7 +53,7 @@ begin
   WordCB.Checked := AWholeWord;
   StatusLabel.Caption := '';
   FindEdit.SelectAll;
-  FindEdit.SetFocus;
+  ActiveControl := FindEdit;
 end;
 
 function TFindForm.FindText:  string;  begin Result := FindEdit.Text;  end;
