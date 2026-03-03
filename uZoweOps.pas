@@ -46,6 +46,11 @@ function ZoweViewAllSpool(const JobID: string): TZoweResult;
 function ZoweViewSpoolFile(const JobID: string; SpoolID: Integer): TZoweResult;
 function ZoweListSpoolFiles(const JobID: string): TZoweResult;
 
+{ Dataset allocation }
+function ZoweAllocateDataset(const Dsn, DsType, Recfm: string;
+  Lrecl, Blksize, Primary, Secondary: Integer;
+  const SpaceUnit: string): TZoweResult;
+
 { Utilities }
 function ZoweIsAvailable: Boolean;
 { Zowe CLI v3 wraps responses in an envelope with "success" and "data"
@@ -236,6 +241,37 @@ function ZoweListSpoolFiles(const JobID: string): TZoweResult;
 begin
   Result := ZoweRunCommand(['zos-jobs', 'list', 'spool-files-by-jobid',
                             JobID, '--response-format-json']);
+end;
+
+{ ------------------------------------------------------------------ }
+{ Dataset allocation                                                   }
+{ ------------------------------------------------------------------ }
+function ZoweAllocateDataset(const Dsn, DsType, Recfm: string;
+  Lrecl, Blksize, Primary, Secondary: Integer;
+  const SpaceUnit: string): TZoweResult;
+var
+  SubCmd: string;
+begin
+  if DsType = 'PS' then
+    SubCmd := 'data-set-sequential'
+  else
+    SubCmd := 'data-set-partitioned';
+
+  if DsType = 'PDSE' then
+    Result := ZoweRunCommand([
+      'zos-files', 'create', SubCmd, Dsn,
+      '--recfm', Recfm,
+      '--lrecl', IntToStr(Lrecl),
+      '--blksize', IntToStr(Blksize),
+      '--size', SpaceUnit + '(' + IntToStr(Primary) + ',' + IntToStr(Secondary) + ')',
+      '--data-set-type', 'LIBRARY'])
+  else
+    Result := ZoweRunCommand([
+      'zos-files', 'create', SubCmd, Dsn,
+      '--recfm', Recfm,
+      '--lrecl', IntToStr(Lrecl),
+      '--blksize', IntToStr(Blksize),
+      '--size', SpaceUnit + '(' + IntToStr(Primary) + ',' + IntToStr(Secondary) + ')']);
 end;
 
 { ------------------------------------------------------------------ }

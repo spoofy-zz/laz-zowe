@@ -248,6 +248,10 @@ object MainForm: TMainForm
         Caption = 'Upload &Local File to MVS...'
         OnClick = MnuZoweUploadLocalClick
       end
+      object MnuZoweAllocate: TMenuItem
+        Caption = 'A&llocate Dataset on MVS...'
+        OnClick = MnuZoweAllocateClick
+      end
       object MnuZoweSep1: TMenuItem
         Caption = '-'
       end

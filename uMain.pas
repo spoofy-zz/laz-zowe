@@ -8,7 +8,8 @@ uses
   Classes, SysUtils, StrUtils, Forms, Controls, Graphics, Dialogs,
   Menus, ComCtrls, ExtCtrls, ClipBrd, LCLType, ImgList,
   SynEdit, SynEditTypes,
-  uSynHighlighter, uZoweOps, uJobsForm, uConfig, uProfileForm, uFindForm;
+  uSynHighlighter, uZoweOps, uJobsForm, uConfig, uProfileForm, uFindForm,
+  uAllocForm;
 
 type
   TMainForm = class(TForm)
@@ -64,6 +65,7 @@ type
     MnuZoweDownload:      TMenuItem;
     MnuZoweUpload:        TMenuItem;
     MnuZoweUploadLocal:   TMenuItem;
+    MnuZoweAllocate:      TMenuItem;
     MnuZoweSep1:          TMenuItem;
     MnuZoweSubmit:      TMenuItem;
     MnuZoweViewSpool:   TMenuItem;
@@ -110,6 +112,7 @@ type
     procedure MnuZoweDownloadClick      (Sender: TObject);
     procedure MnuZoweUploadClick        (Sender: TObject);
     procedure MnuZoweUploadLocalClick   (Sender: TObject);
+    procedure MnuZoweAllocateClick      (Sender: TObject);
     procedure MnuZoweSubmitClick        (Sender: TObject);
     procedure MnuZoweViewSpoolClick (Sender: TObject);
     procedure MnuZoweCheckClick     (Sender: TObject);
@@ -853,6 +856,56 @@ begin
   StatusBar1.Panels[0].Text := 'Uploaded to ' + Dataset;
   ShowMessage(ExtractFileName(LocalFile) + #10 +
               'uploaded successfully to ' + Dataset);
+end;
+
+procedure TMainForm.MnuZoweAllocateClick(Sender: TObject);
+var
+  F: TAllocForm;
+  Dsn, DsType, Recfm, SpaceUnit: string;
+  Lrecl, Blksize, Primary, Secondary, Code: Integer;
+  R: TZoweResult;
+  DoAlloc: Boolean;
+begin
+  DoAlloc := False;
+  F := TAllocForm.Create(Self);
+  try
+    if F.ShowModal = mrOK then
+    begin
+      Dsn       := Trim(F.EdtDatasetName.Text);
+      Recfm     := F.CmbRecfm.Text;
+      SpaceUnit := F.CmbSpaceUnit.Text;
+      case F.CmbDsType.ItemIndex of
+        0: DsType := 'PS';
+        1: DsType := 'PO';
+        2: DsType := 'PDSE';
+      else
+        DsType := 'PS';
+      end;
+      Val(F.EdtLrecl.Text,    Lrecl,     Code);  if Code <> 0 then Lrecl     := 80;
+      Val(F.EdtBlksize.Text,  Blksize,   Code);  if Code <> 0 then Blksize   := 0;
+      Val(F.EdtPrimary.Text,  Primary,   Code);  if Code <> 0 then Primary   := 10;
+      Val(F.EdtSecondary.Text,Secondary, Code);  if Code <> 0 then Secondary := 5;
+      DoAlloc := True;
+    end;
+  finally
+    F.Free;
+  end;
+
+  if not DoAlloc then Exit;
+
+  SetBusy('Allocating dataset ' + Dsn + ' on MVS...');
+  try
+    R := ZoweAllocateDataset(Dsn, DsType, Recfm, Lrecl, Blksize,
+                             Primary, Secondary, SpaceUnit);
+  finally
+    SetReady;
+  end;
+
+  if not R.Success then
+    ShowMessage('Dataset allocation failed:'#10 + R.ErrorMsg)
+  else
+    ShowMessage('Dataset ' + Dsn + ' allocated successfully.');
+  TriggerFocusRestore;
 end;
 
 procedure TMainForm.MnuZoweSubmitClick(Sender: TObject);

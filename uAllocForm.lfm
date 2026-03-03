@@ -1,0 +1,175 @@
+object AllocForm: TAllocForm
+  Left = 0
+  Top = 0
+  Caption = 'Allocate Dataset on MVS'
+  ClientHeight = 264
+  ClientWidth = 450
+  Position = poOwnerFormCenter
+  OnCreate = FormCreate
+  object LblDatasetName: TLabel
+    Left = 8
+    Top = 14
+    Width = 116
+    Height = 17
+    AutoSize = False
+    Caption = 'Dataset Name:'
+  end
+  object EdtDatasetName: TEdit
+    Left = 130
+    Top = 11
+    Width = 308
+    Height = 24
+    CharCase = ecUpperCase
+  end
+  object LblDsType: TLabel
+    Left = 8
+    Top = 46
+    Width = 116
+    Height = 17
+    AutoSize = False
+    Caption = 'Dataset Type:'
+  end
+  object CmbDsType: TComboBox
+    Left = 130
+    Top = 43
+    Width = 200
+    Height = 24
+    Style = csDropDownList
+  end
+  object LblRecAttr: TLabel
+    Left = 8
+    Top = 80
+    Width = 214
+    Height = 17
+    AutoSize = False
+    Caption = 'Record Attributes'
+    Font.Style = [fsBold]
+    ParentFont = False
+  end
+  object LblSpaceHdr: TLabel
+    Left = 234
+    Top = 80
+    Width = 208
+    Height = 17
+    AutoSize = False
+    Caption = 'Space Allocation'
+    Font.Style = [fsBold]
+    ParentFont = False
+  end
+  object LblRecfm: TLabel
+    Left = 8
+    Top = 107
+    Width = 108
+    Height = 17
+    AutoSize = False
+    Caption = 'Record Format:'
+  end
+  object CmbRecfm: TComboBox
+    Left = 118
+    Top = 104
+    Width = 104
+    Height = 24
+    Style = csDropDownList
+    OnChange = CmbRecfmChange
+  end
+  object LblSpaceUnit: TLabel
+    Left = 234
+    Top = 107
+    Width = 108
+    Height = 17
+    AutoSize = False
+    Caption = 'Space Unit:'
+  end
+  object CmbSpaceUnit: TComboBox
+    Left = 344
+    Top = 104
+    Width = 98
+    Height = 24
+    Style = csDropDownList
+  end
+  object LblLrecl: TLabel
+    Left = 8
+    Top = 139
+    Width = 108
+    Height = 17
+    AutoSize = False
+    Caption = 'LRECL:'
+  end
+  object EdtLrecl: TEdit
+    Left = 118
+    Top = 136
+    Width = 104
+    Height = 24
+  end
+  object LblPrimary: TLabel
+    Left = 234
+    Top = 139
+    Width = 108
+    Height = 17
+    AutoSize = False
+    Caption = 'Primary Qty:'
+  end
+  object EdtPrimary: TEdit
+    Left = 344
+    Top = 136
+    Width = 98
+    Height = 24
+  end
+  object LblBlksize: TLabel
+    Left = 8
+    Top = 171
+    Width = 108
+    Height = 17
+    AutoSize = False
+    Caption = 'Block Size:'
+  end
+  object EdtBlksize: TEdit
+    Left = 118
+    Top = 168
+    Width = 104
+    Height = 24
+  end
+  object LblSecondary: TLabel
+    Left = 234
+    Top = 171
+    Width = 108
+    Height = 17
+    AutoSize = False
+    Caption = 'Secondary Qty:'
+  end
+  object EdtSecondary: TEdit
+    Left = 344
+    Top = 168
+    Width = 98
+    Height = 24
+  end
+  object LblHint: TLabel
+    Left = 8
+    Top = 204
+    Width = 434
+    Height = 14
+    AutoSize = False
+    Caption = 'Block size 0 = system default.  LRECL 0 = undefined (use with RECFM U).'
+    Font.Size = 8
+    ParentFont = False
+    WordWrap = True
+  end
+  object BtnOK: TButton
+    Left = 270
+    Top = 228
+    Width = 80
+    Height = 28
+    Caption = 'Allocate'
+    Default = True
+    OnClick = BtnOKClick
+  end
+  object BtnCancel: TButton
+    Left = 358
+    Top = 228
+    Width = 84
+    Height = 28
+    Cancel = True
+    Caption = 'Cancel'
+    ModalResult = 2
+  end
+end
