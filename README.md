@@ -134,6 +134,8 @@ bash build.sh Release
 
 > **macOS note:** Running `./editor` directly from the terminal also works — the app activates itself via `NSApp.activateIgnoringOtherApps` at startup.
 
+> **macOS icon note:** If you build from the Lazarus IDE (F9), `lazbuild` will wipe the bundle icon. Always use `./build.sh` as the final build step — or after an IDE build, run `./build.sh` once more to restore the icon.
+
 ---
 
 ## Zowe CLI setup
