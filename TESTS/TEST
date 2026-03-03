@@ -7,11 +7,11 @@
 //         PARM.COB='FLAGW,LOAD,SUPMAP,SIZE=2048K,BUF=1024K'                    
 //COB.SYSPUNCH DD DUMMY                                                         
 //COB.SYSIN    DD *                                                             
-       IDENTIFICATION DIVISION.                                            PRIME
-       PROGRAM-ID.  'PRIMES'.                                              PRIME
-       ENVIRONMENT DIVISION.                                               PRIME
-       DATA DIVISION.                                                      PRIME
-       WORKING-STORAGE SECTION.                                            PRIME
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID.  'PRIMES'.
+       ENVIRONMENT DIVISION.
+       DATA DIVISION.
+       WORKING-STORAGE SECTION.
        77  PRVI      PIC 9(4)V9.                                                
        77  DRUGI     PIC 9(4)V9.                                                
        77  REZ       PIC 9(4)V9.                                                

@@ -95,8 +95,10 @@ var
   TmpStr: string;
   N:      LongInt;
   I:      Integer;
-  {$IFDEF DARWIN}
+  {$IF DEFINED(DARWIN) OR DEFINED(WINDOWS)}
   Cmd:   string;
+  {$ENDIF}
+  {$IFDEF DARWIN}
   Shell: string;
   {$ENDIF}
 begin
@@ -107,7 +109,7 @@ begin
 
   Proc := TProcess.Create(nil);
   try
-    {$IFDEF DARWIN}
+    {$IF DEFINED(DARWIN)}
     { Run through the user's login+interactive shell so that nvm/fnm
       (and therefore both 'node' and 'zowe') are on PATH.
       -i  → sources ~/.bashrc / ~/.zshrc  (nvm lives here)
@@ -125,7 +127,30 @@ begin
     Proc.Executable := Shell;
     Proc.Parameters.Add('-ilc');
     Proc.Parameters.Add(Cmd);
+    {$ELSEIF DEFINED(WINDOWS)}
+    { On Windows, npm installs zowe as zowe.cmd.  CreateProcess cannot
+      locate .cmd files on PATH directly, so route through cmd.exe /c.
+      Build the full command string as a single argument after /c. }
+    Cmd := 'zowe';
+    for I := 0 to High(Args) do
+    begin
+      if Pos(' ', Args[I]) > 0 then
+        Cmd := Cmd + ' "' + Args[I] + '"'
+      else
+        Cmd := Cmd + ' ' + Args[I];
+    end;
+    if (ActiveZoweProfile <> '') and
+       not ((Length(Args) > 0) and (Args[0] = '--version')) then
+      Cmd := Cmd + ' --zosmf-profile "' + ActiveZoweProfile + '"';
+    { COMSPEC gives the absolute path to cmd.exe (e.g. C:\Windows\System32\cmd.exe).
+      CreateProcess may not resolve a bare 'cmd.exe' when it is passed via
+      lpApplicationName; an absolute path is always safe. }
+    Proc.Executable := GetEnvironmentVariable('COMSPEC');
+    if Proc.Executable = '' then Proc.Executable := 'cmd.exe';
+    Proc.Parameters.Add('/c');
+    Proc.Parameters.Add(Cmd);
     {$ELSE}
+    { Linux: zowe is a real executable, invoke directly }
     Proc.Executable := 'zowe';
     for I := 0 to High(Args) do
       Proc.Parameters.Add(Args[I]);

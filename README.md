@@ -1,6 +1,6 @@
 # Zowe MVS Editor
 
-A lightweight text editor built with **Lazarus / Free Pascal** for **Linux** (GTK2) and **macOS** (Cocoa), with native integration for IBM z/OS (MVS) mainframe systems via the [Zowe CLI](https://docs.zowe.org/stable/user-guide/cli-installcli/).
+A lightweight text editor built with **Lazarus / Free Pascal** for **Linux** (GTK2), **macOS** (Cocoa), and **Windows** (Win32), with native integration for IBM z/OS (MVS) mainframe systems via the [Zowe CLI](https://docs.zowe.org/stable/user-guide/cli-installcli/).
 
 The editor is **Lazarus form-designer friendly**: all UI components are declared as published fields and the `.lfm` files contain the full widget tree, so you can open the project in the Lazarus IDE and visually modify the layout without touching any code.
 
@@ -115,10 +115,13 @@ Hovering a button shows a tooltip with the action name and keyboard shortcut.
 | [Zowe CLI](https://docs.zowe.org/stable/user-guide/cli-installcli/) | 8.x (v3 release) |
 | Linux (GTK2) | Ubuntu 24.04 / x86-64 |
 | macOS (Cocoa) | macOS 15 Sequoia, Apple Silicon |
+| Windows (Win32) | Windows 11 / x86-64 |
 
 ---
 
 ## Build
+
+### Linux / macOS
 
 ```bash
 # Debug build (default)
@@ -136,14 +139,26 @@ bash build.sh Release
 
 > **macOS icon note:** If you build from the Lazarus IDE (F9), `lazbuild` will wipe the bundle icon. Always use `./build.sh` as the final build step — or after an IDE build, run `./build.sh` once more to restore the icon.
 
+### Windows
+
+```bat
+rem Debug build (default)
+build.bat
+
+rem Optimised release build
+build.bat Release
+```
+
+`build.bat` calls `lazbuild` and produces `editor.exe` in the project root.  Run it directly from a Command Prompt or by double-clicking.
+
+> **Windows prerequisite:** Make sure `lazbuild.exe` and `fpc.exe` are on your `PATH` (the Lazarus installer adds them automatically if you tick the option during setup).
+
 ---
 
 ## Zowe CLI setup
 
-The editor calls `zowe` through the user's login shell (`$SHELL -ilc`) so that nvm/fnm and Homebrew paths are available regardless of how the app is launched.
-
 ```bash
-# Install Zowe CLI (requires Node.js / npm or nvm)
+# Install Zowe CLI (requires Node.js / npm)
 npm install -g @zowe/cli
 
 # Create a z/OSMF profile
@@ -152,6 +167,10 @@ zowe config init
 # Verify the connection
 zowe zosmf check status
 ```
+
+**Linux / macOS:** the editor calls `zowe` through the user's login shell (`$SHELL -ilc`) so that nvm/fnm and Homebrew paths are available regardless of how the app is launched.
+
+**Windows:** `npm install -g @zowe/cli` installs `zowe` as a `.cmd` batch wrapper (`zowe.cmd`).  The editor routes all Zowe calls through `cmd.exe /c` (using the `COMSPEC` environment variable for the absolute path) so that `.cmd` files on `PATH` are resolved correctly.
 
 Refer to the [Zowe CLI documentation](https://docs.zowe.org/stable/user-guide/cli-installcli/) for full profile configuration.
 
@@ -172,7 +191,8 @@ Refer to the [Zowe CLI documentation](https://docs.zowe.org/stable/user-guide/cl
 ├── uConfig.pas             # Config load/save (IniFiles → ~/.config/laz-zowe/config.ini)
 ├── uProfileForm.pas        # Zowe profile selection dialog
 ├── uProfileForm.lfm        # Full widget tree for the profile dialog
-├── build.sh                # Build helper + .app bundle setup
+├── build.sh                # Build helper for Linux/macOS + .app bundle setup
+├── build.bat               # Build helper for Windows
 ├── editor.app/             # macOS application bundle
 └── TESTS/
     └── TEST                # Sample JCL / COBOL job for testing
@@ -184,10 +204,13 @@ Refer to the [Zowe CLI documentation](https://docs.zowe.org/stable/user-guide/cl
 
 - **Form designer**: open `editor.lpi` in the Lazarus IDE. Both forms are fully editable in the visual designer — all components are visible and can be moved, resized, or supplemented without modifying `.pas` code.
 - **Zowe CLI v3** wraps all `--response-format-json` responses in an envelope `{"success":…,"data":…}`. The `ZoweUnwrapData()` helper in `uZoweOps.pas` handles this transparently. Shell startup noise (e.g. `bash: no job control`) is automatically stripped before JSON parsing.
-- **PATH**: Zowe commands are run via `$SHELL -ilc 'zowe ...'` so that nvm/fnm and Homebrew-installed `node`/`zowe` binaries are on the PATH regardless of how the app is launched.
-- **Font**: the editor uses a monospace font (default: `Monospace` on Linux, `Menlo` on macOS). Change it via **Edit → Editor Font…**; the choice is persisted in `~/.config/laz-zowe/config.ini`.
+- **PATH (Linux/macOS)**: Zowe commands are run via `$SHELL -ilc 'zowe ...'` so that nvm/fnm and Homebrew-installed `node`/`zowe` binaries are on the PATH regardless of how the app is launched.
+- **PATH (Windows)**: Zowe commands are routed through `cmd.exe /c` (resolved via `COMSPEC`) because npm installs `zowe` as `zowe.cmd`, which `TProcess`/`CreateProcess` cannot locate directly without a shell. Arguments containing spaces are double-quoted automatically.
+- **Font**: the editor uses a monospace font (default: `Monospace` on Linux, `Menlo` on macOS, `Courier New` on Windows). Change it via **Edit → Editor Font…**; the choice is persisted in the config file.
+- **Config file location**: `~/.config/laz-zowe/config.ini` on Linux/macOS; `%USERPROFILE%\.config\laz-zowe\config.ini` on Windows.
+- **Zowe config location**: `~/.zowe/zowe.config.json` on Linux/macOS; `%USERPROFILE%\.zowe\zowe.config.json` on Windows.
 - The editor blocks the UI during Zowe operations. Progress is shown in the status bar. Threading can be added later if needed.
-- All temp files created during download/upload/submit are written to `$TMPDIR` and deleted automatically after use.
+- All temp files created during download/upload/submit are written to the system temp directory (`$TMPDIR` on Linux/macOS, `%TEMP%` on Windows) and deleted automatically after use.
 
 ---
 
