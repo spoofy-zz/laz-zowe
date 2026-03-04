@@ -294,16 +294,16 @@ object MainForm: TMainForm
   end
   object OpenDialog1: TOpenDialog
     Title = 'Open file'
-    Filter = 'All files (*.*)|*.*|Text files (*.txt)|*.txt|JCL files (*.jcl)|*.jcl|COBOL (*.cbl;*.cob)|*.cbl;*.cob'
+    Filter = 'All files (*)|*|Text files (*.txt)|*.txt|JCL files (*.jcl)|*.jcl|COBOL (*.cbl;*.cob)|*.cbl;*.cob'
   end
   object SaveDialog1: TSaveDialog
     Title = 'Save file'
-    Filter = 'All files (*.*)|*.*|Text files (*.txt)|*.txt|JCL files (*.jcl)|*.jcl|COBOL (*.cbl;*.cob)|*.cbl;*.cob'
+    Filter = 'All files (*)|*|Text files (*.txt)|*.txt|JCL files (*.jcl)|*.jcl|COBOL (*.cbl;*.cob)|*.cbl;*.cob'
     Options = [ofOverwritePrompt]
   end
   object UploadDialog: TOpenDialog
     Title = 'Select local file to upload to MVS'
-    Filter = 'All files (*.*)|*.*|Text files (*.txt)|*.txt|JCL files (*.jcl)|*.jcl|COBOL (*.cbl;*.cob)|*.cbl;*.cob'
+    Filter = 'All files (*)|*|Text files (*.txt)|*.txt|JCL files (*.jcl)|*.jcl|COBOL (*.cbl;*.cob)|*.cbl;*.cob'
   end
   object FontDialog1: TFontDialog
     Options = [fdFixedPitchOnly]
