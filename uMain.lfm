@@ -142,6 +142,7 @@ object MainForm: TMainForm
     Font.Size = 11
     Font.Style = []
     ScrollBars = ssBoth
+    MaxLeftChar = 132
     Gutter.Visible = False
     RightEdge = 80
     RightEdgeColor = clRed

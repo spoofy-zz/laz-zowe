@@ -35,12 +35,17 @@ type
     LblSecondary: TLabel;
     EdtSecondary: TEdit;
 
+    { Dir blocks (PDS/PDSE only) }
+    LblDirBlks: TLabel;
+    EdtDirBlks: TEdit;
+
     { Hint + buttons }
     LblHint:   TLabel;
     BtnOK:     TButton;
     BtnCancel: TButton;
 
     procedure FormCreate(Sender: TObject);
+    procedure CmbDsTypeChange(Sender: TObject);
     procedure CmbRecfmChange(Sender: TObject);
     procedure BtnOKClick(Sender: TObject);
   end;
@@ -73,10 +78,20 @@ begin
   CmbSpaceUnit.Items.Add('BLK');
   CmbSpaceUnit.ItemIndex := 0;
 
-  EdtLrecl.Text    := '80';
-  EdtBlksize.Text  := '6160';
-  EdtPrimary.Text  := '10';
+  EdtLrecl.Text     := '80';
+  EdtBlksize.Text   := '6160';
+  EdtPrimary.Text   := '10';
   EdtSecondary.Text := '5';
+  EdtDirBlks.Text   := '5';
+end;
+
+procedure TAllocForm.CmbDsTypeChange(Sender: TObject);
+var
+  IsPds: Boolean;
+begin
+  IsPds := CmbDsType.ItemIndex > 0;
+  LblDirBlks.Visible := IsPds;
+  EdtDirBlks.Visible := IsPds;
 end;
 
 procedure TAllocForm.CmbRecfmChange(Sender: TObject);
@@ -104,7 +119,7 @@ end;
 procedure TAllocForm.BtnOKClick(Sender: TObject);
 var
   Dsn: string;
-  Lrecl, Blksize, Primary, Secondary, Code: Integer;
+  Lrecl, Blksize, Primary, Secondary, DirBlks, Code: Integer;
 begin
   Dsn := Trim(EdtDatasetName.Text);
   if Dsn = '' then
@@ -144,6 +159,17 @@ begin
     ShowMessage('Secondary space must be 0 or a positive number.');
     EdtSecondary.SetFocus;
     Exit;
+  end;
+
+  if EdtDirBlks.Visible then
+  begin
+    Val(EdtDirBlks.Text, DirBlks, Code);
+    if (Code <> 0) or (DirBlks < 1) then
+    begin
+      ShowMessage('Dir Blocks must be a positive number.');
+      EdtDirBlks.SetFocus;
+      Exit;
+    end;
   end;
 
   ModalResult := mrOK;

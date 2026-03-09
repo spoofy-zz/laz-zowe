@@ -445,7 +445,7 @@ begin
   else
     GutterW := 0;
   NonClientW := Width - ClientWidth;
-  Constraints.MaxWidth := 123 * CharW + GutterW + NonClientW;
+  Constraints.MaxWidth := 132 * CharW + GutterW + NonClientW;
 end;
 
 procedure TMainForm.SetModified(AValue: Boolean);
@@ -862,7 +862,7 @@ procedure TMainForm.MnuZoweAllocateClick(Sender: TObject);
 var
   F: TAllocForm;
   Dsn, DsType, Recfm, SpaceUnit: string;
-  Lrecl, Blksize, Primary, Secondary, Code: Integer;
+  Lrecl, Blksize, Primary, Secondary, DirBlks, Code: Integer;
   R: TZoweResult;
   DoAlloc: Boolean;
 begin
@@ -885,6 +885,7 @@ begin
       Val(F.EdtBlksize.Text,  Blksize,   Code);  if Code <> 0 then Blksize   := 0;
       Val(F.EdtPrimary.Text,  Primary,   Code);  if Code <> 0 then Primary   := 10;
       Val(F.EdtSecondary.Text,Secondary, Code);  if Code <> 0 then Secondary := 5;
+      Val(F.EdtDirBlks.Text,  DirBlks,   Code);  if Code <> 0 then DirBlks   := 5;
       DoAlloc := True;
     end;
   finally
@@ -896,7 +897,7 @@ begin
   SetBusy('Allocating dataset ' + Dsn + ' on MVS...');
   try
     R := ZoweAllocateDataset(Dsn, DsType, Recfm, Lrecl, Blksize,
-                             Primary, Secondary, SpaceUnit);
+                             Primary, Secondary, SpaceUnit, DirBlks);
   finally
     SetReady;
   end;
@@ -1045,7 +1046,7 @@ end;
 procedure TMainForm.RulerBoxPaint(Sender: TObject);
 const
   COL_GUIDE = 80;    { soft convention guide – red }
-  COL_LIMIT = 123;   { hard window limit – blue    }
+  COL_LIMIT = 132;   { hard window limit – blue    }
 var
   CharW, GutterW, FirstCol, LastCol, Col, X, H: Integer;
   S: string;

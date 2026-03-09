@@ -2,7 +2,7 @@ object AllocForm: TAllocForm
   Left = 0
   Top = 0
   Caption = 'Allocate Dataset on MVS'
-  ClientHeight = 264
+  ClientHeight = 296
   ClientWidth = 450
   Position = poOwnerFormCenter
   OnCreate = FormCreate
@@ -35,6 +35,7 @@ object AllocForm: TAllocForm
     Width = 200
     Height = 24
     Style = csDropDownList
+    OnChange = CmbDsTypeChange
   end
   object LblRecAttr: TLabel
     Left = 8
@@ -143,9 +144,25 @@ object AllocForm: TAllocForm
     Width = 98
     Height = 24
   end
+  object LblDirBlks: TLabel
+    Left = 234
+    Top = 203
+    Width = 108
+    Height = 17
+    AutoSize = False
+    Caption = 'Dir Blocks:'
+    Visible = False
+  end
+  object EdtDirBlks: TEdit
+    Left = 344
+    Top = 200
+    Width = 98
+    Height = 24
+    Visible = False
+  end
   object LblHint: TLabel
     Left = 8
-    Top = 204
+    Top = 236
     Width = 434
     Height = 14
     AutoSize = False
@@ -156,7 +173,7 @@ object AllocForm: TAllocForm
   end
   object BtnOK: TButton
     Left = 270
-    Top = 228
+    Top = 260
     Width = 80
     Height = 28
     Caption = 'Allocate'
@@ -165,7 +182,7 @@ object AllocForm: TAllocForm
   end
   object BtnCancel: TButton
     Left = 358
-    Top = 228
+    Top = 260
     Width = 84
     Height = 28
     Cancel = True

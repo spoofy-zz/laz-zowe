@@ -49,7 +49,7 @@ function ZoweListSpoolFiles(const JobID: string): TZoweResult;
 { Dataset allocation }
 function ZoweAllocateDataset(const Dsn, DsType, Recfm: string;
   Lrecl, Blksize, Primary, Secondary: Integer;
-  const SpaceUnit: string): TZoweResult;
+  const SpaceUnit: string; DirBlks: Integer = 5): TZoweResult;
 
 { Utilities }
 function ZoweIsAvailable: Boolean;
@@ -273,14 +273,17 @@ end;
 { ------------------------------------------------------------------ }
 function ZoweAllocateDataset(const Dsn, DsType, Recfm: string;
   Lrecl, Blksize, Primary, Secondary: Integer;
-  const SpaceUnit: string): TZoweResult;
+  const SpaceUnit: string; DirBlks: Integer = 5): TZoweResult;
 var
   SubCmd: string;
+  SizeStr: string;
 begin
   if DsType = 'PS' then
     SubCmd := 'data-set-sequential'
   else
     SubCmd := 'data-set-partitioned';
+
+  SizeStr := SpaceUnit + '(' + IntToStr(Primary) + ',' + IntToStr(Secondary) + ')';
 
   if DsType = 'PDSE' then
     Result := ZoweRunCommand([
@@ -288,15 +291,24 @@ begin
       '--recfm', Recfm,
       '--lrecl', IntToStr(Lrecl),
       '--blksize', IntToStr(Blksize),
-      '--size', SpaceUnit + '(' + IntToStr(Primary) + ',' + IntToStr(Secondary) + ')',
+      '--size', SizeStr,
+      '--dirblks', IntToStr(DirBlks),
       '--data-set-type', 'LIBRARY'])
+  else if DsType = 'PO' then
+    Result := ZoweRunCommand([
+      'zos-files', 'create', SubCmd, Dsn,
+      '--recfm', Recfm,
+      '--lrecl', IntToStr(Lrecl),
+      '--blksize', IntToStr(Blksize),
+      '--size', SizeStr,
+      '--dirblks', IntToStr(DirBlks)])
   else
     Result := ZoweRunCommand([
       'zos-files', 'create', SubCmd, Dsn,
       '--recfm', Recfm,
       '--lrecl', IntToStr(Lrecl),
       '--blksize', IntToStr(Blksize),
-      '--size', SpaceUnit + '(' + IntToStr(Primary) + ',' + IntToStr(Secondary) + ')']);
+      '--size', SizeStr]);
 end;
 
 { ------------------------------------------------------------------ }
