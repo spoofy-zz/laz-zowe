@@ -62,13 +62,24 @@ The current syntax type is shown in the right panel of the status bar (`Syntax: 
 | Check Zowe connection | Zowe menu |
 | Configure Zowe profile | Zowe menu |
 
+#### Dataset browser
+
+All three download/upload actions share the same two-step dataset browser instead of a plain text prompt:
+
+1. **HLQ prompt** — enter a high-level qualifier (e.g. `SYS1`) or a full dataset name (e.g. `RVEZ001.JCL`).
+2. **Dataset list dialog** — the editor queries `HLQ.*`, `HLQ.*.*`, and `HLQ.*.*.*` in sequence and merges the results into a single scrollable list.  Select a dataset and click **OK**, or double-click to confirm immediately.
+   - **Members... button** — select a PDS in the list (or type its name) and click **Members...** to fetch and display all its members.  Pick one and the target field is filled as `DSN(MEMBER)`.
+   - **New Member... button** (in the member list dialog) — type a new 1–8 character member name; the editor will create it on MVS when the upload writes to `DSN(NEWMEMBER)`.
+   - The **Dataset:** text field is always editable, so you can type or adjust the name (e.g. append `(MEMBER)`) before confirming.
+3. **Fallback** — if no datasets are found and the input contained a dot, the member list of that PDS is tried automatically.  If still nothing is found, a plain input box is shown.
+
 #### Upload workflows
 
 **Upload editor content** (`Zowe > Upload Editor Content to MVS...`)
-Opens a dataset-name prompt and uploads whatever is currently open in the editor.
+Opens the dataset browser and uploads whatever is currently open in the editor.
 
 **Upload local file** (`Zowe > Upload Local File to MVS...`)
-Opens a file-selector dialog to pick any local file, then a dataset-name prompt for the MVS target, then a **transfer mode** choice:
+Opens a file-selector dialog to pick any local file, then the dataset browser for the MVS target, then a **transfer mode** choice:
 
 | Mode | Zowe flag | When to use |
 |---|---|---|
@@ -187,6 +198,7 @@ Refer to the [Zowe CLI documentation](https://docs.zowe.org/stable/user-guide/cl
 ├── uJobsForm.pas           # Jobs & spool viewer form
 ├── uJobsForm.lfm           # Full widget tree for job viewer
 ├── uZoweOps.pas            # Zowe CLI wrapper (TProcess, pipe-polling, shell fix, profile flag)
+├── uDsBrowse.pas           # Dataset + PDS member browser dialogs (code-only, no LFM)
 ├── uSynHighlighter.pas     # Custom TSynJCLHighlighter + TSynCOBOLHighlighter
 ├── uConfig.pas             # Config load/save (IniFiles → ~/.config/laz-zowe/config.ini)
 ├── uProfileForm.pas        # Zowe profile selection dialog

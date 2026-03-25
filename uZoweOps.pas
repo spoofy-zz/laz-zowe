@@ -5,7 +5,7 @@ unit uZoweOps;
 interface
 
 uses
-  Classes, SysUtils, Process;
+  Classes, SysUtils, Process, fpjson, jsonparser;
 
 type
   TZoweResult = record
@@ -46,6 +46,16 @@ function ZoweViewAllSpool(const JobID: string): TZoweResult;
 function ZoweViewSpoolFile(const JobID: string; SpoolID: Integer): TZoweResult;
 function ZoweListSpoolFiles(const JobID: string): TZoweResult;
 
+{ Dataset listing }
+function ZoweListDatasets(const Pattern: string): TZoweResult;
+procedure ParseDatasetList(const RawText: string; Names: TStringList);
+{ Tries HLQ.*, HLQ.*.*, HLQ.*.*.* and merges unique dsnames into Names. }
+function ZoweListDatasetsAll(const HLQ: string; Names: TStringList): Boolean;
+
+{ PDS member listing }
+function ZoweListMembers(const DSN: string): TZoweResult;
+procedure ParseMemberList(const RawText: string; Names: TStringList);
+
 { Dataset allocation }
 function ZoweAllocateDataset(const Dsn, DsType, Recfm: string;
   Lrecl, Blksize, Primary, Secondary: Integer;
@@ -61,9 +71,6 @@ function ExtractJobID(const SubmitOutput: string): string;
 procedure ParseJobList(const JsonText: string; out Jobs: TJobInfoArray);
 
 implementation
-
-uses
-  fpjson, jsonparser;
 
 { ------------------------------------------------------------------ }
 { On macOS, .app bundles start with a minimal PATH that omits        }
@@ -228,6 +235,152 @@ begin
   else
     Result := ZoweRunCommand(['zos-files', 'upload', 'file-to-data-set',
                               LocalFile, Dataset]);
+end;
+
+function ZoweListDatasets(const Pattern: string): TZoweResult;
+begin
+  { Plain text output – more reliable across Zowe CLI versions than JSON }
+  Result := ZoweRunCommand(['zos-files', 'list', 'data-set', Pattern]);
+end;
+
+{ Parse plain-text output of "zowe zos-files list data-set".
+  Each line's first whitespace-delimited token is extracted and validated
+  as a z/OS dataset name (uppercase, contains a dot, no spaces, only
+  chars A-Z 0-9 @ # $ - .). This tolerates both plain and tabular output
+  formats and filters out shell noise / error messages. }
+procedure ParseDatasetList(const RawText: string; Names: TStringList);
+var
+  Lines: TStringList;
+  I, J:  Integer;
+  Line:  string;
+  Token: string;
+  Valid: Boolean;
+  Ch:    Char;
+  P:     Integer;
+begin
+  Names.Clear;
+  Lines := TStringList.Create;
+  try
+    Lines.Text := RawText;
+    for I := 0 to Lines.Count - 1 do
+    begin
+      Line := Trim(Lines[I]);
+      if Length(Line) = 0 then Continue;
+      { Take only the first whitespace token (handles tabular output) }
+      P := Pos(' ', Line);
+      if P > 0 then Token := Copy(Line, 1, P - 1) else Token := Line;
+      P := Pos(#9, Token);
+      if P > 0 then Token := Copy(Token, 1, P - 1);
+      Token := UpperCase(Token);
+      if (Length(Token) = 0) or (Length(Token) > 44) then Continue;
+      { First character must be A-Z or special (@, #, $) }
+      if not (Token[1] in ['A'..'Z', '@', '#', '$']) then Continue;
+      { Must contain at least one dot and only valid dataset-name chars }
+      Valid := False;
+      for J := 1 to Length(Token) do
+      begin
+        Ch := Token[J];
+        if Ch = '.' then
+          Valid := True
+        else if not (Ch in ['A'..'Z', '0'..'9', '@', '#', '$', '-']) then
+        begin
+          Valid := False;
+          Break;
+        end;
+      end;
+      if Valid then
+        Names.Add(Token);
+    end;
+  finally
+    Lines.Free;
+  end;
+end;
+
+function ZoweListDatasetsAll(const HLQ: string; Names: TStringList): Boolean;
+var
+  R:      TZoweResult;
+  Tmp:    TStringList;
+  Base:   string;
+  Suffix: string;
+  Pat:    string;
+  I, J:   Integer;
+begin
+  Names.Clear;
+  Base   := UpperCase(Trim(HLQ));
+  Suffix := '';
+  Tmp    := TStringList.Create;
+  try
+    for I := 1 to 3 do
+    begin
+      Suffix := Suffix + '.*';
+      Pat    := Base + Suffix;
+      R      := ZoweListDatasets(Pat);
+      { Parse the output regardless of exit code – some Zowe CLI versions
+        exit non-zero even when datasets are successfully listed }
+      if Trim(R.Output) <> '' then
+      begin
+        Tmp.Clear;
+        ParseDatasetList(R.Output, Tmp);
+        for J := 0 to Tmp.Count - 1 do
+          if Names.IndexOf(Tmp[J]) < 0 then
+            Names.Add(Tmp[J]);
+      end;
+    end;
+  finally
+    Tmp.Free;
+  end;
+  Result := Names.Count > 0;
+end;
+
+function ZoweListMembers(const DSN: string): TZoweResult;
+begin
+  Result := ZoweRunCommand(['zos-files', 'list', 'all-members', DSN]);
+end;
+
+{ Parse plain-text output of "zowe zos-files list all-members".
+  Member names are 1-8 chars, uppercase, A-Z 0-9 @ # $, no dots. }
+procedure ParseMemberList(const RawText: string; Names: TStringList);
+var
+  Lines: TStringList;
+  I, J:  Integer;
+  Line:  string;
+  Token: string;
+  Valid: Boolean;
+  Ch:    Char;
+  P:     Integer;
+begin
+  Names.Clear;
+  Lines := TStringList.Create;
+  try
+    Lines.Text := RawText;
+    for I := 0 to Lines.Count - 1 do
+    begin
+      Line := Trim(Lines[I]);
+      if Length(Line) = 0 then Continue;
+      { First whitespace token only }
+      P := Pos(' ', Line);
+      if P > 0 then Token := Copy(Line, 1, P - 1) else Token := Line;
+      P := Pos(#9, Token);
+      if P > 0 then Token := Copy(Token, 1, P - 1);
+      Token := UpperCase(Token);
+      if (Length(Token) = 0) or (Length(Token) > 8) then Continue;
+      if not (Token[1] in ['A'..'Z', '@', '#', '$']) then Continue;
+      Valid := True;
+      for J := 1 to Length(Token) do
+      begin
+        Ch := Token[J];
+        if not (Ch in ['A'..'Z', '0'..'9', '@', '#', '$']) then
+        begin
+          Valid := False;
+          Break;
+        end;
+      end;
+      if Valid then
+        Names.Add(Token);
+    end;
+  finally
+    Lines.Free;
+  end;
 end;
 
 { ------------------------------------------------------------------ }

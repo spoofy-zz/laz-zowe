@@ -9,7 +9,7 @@ uses
   Menus, ComCtrls, ExtCtrls, ClipBrd, LCLType, ImgList,
   SynEdit, SynEditTypes,
   uSynHighlighter, uZoweOps, uJobsForm, uConfig, uProfileForm, uFindForm,
-  uAllocForm;
+  uAllocForm, uDsBrowse;
 
 type
   TMainForm = class(TForm)
@@ -710,14 +710,65 @@ end;
 { ==================================================================== }
 procedure TMainForm.MnuZoweDownloadClick(Sender: TObject);
 var
+  HLQ:    string;
   Dataset: string;
   TF:      string;
   R:       TZoweResult;
+  DsList:  TStringList;
+  P:       Integer;
 begin
-  Dataset := InputBox('Download from MVS',
-    'Enter dataset name (e.g. HLQ.MYJCL  or  HLQ.PDS(MEMBER)):',
-    FCurrentDataset);
-  if Trim(Dataset) = '' then Exit;
+  { Derive a default HLQ from the current dataset's first qualifier }
+  HLQ := FCurrentDataset;
+  P   := Pos('.', HLQ);
+  if P > 1 then HLQ := Copy(HLQ, 1, P - 1);
+
+  HLQ := InputBox('Download from MVS',
+    'Enter HLQ to browse (e.g. SYS1):'#10 +
+    'Tip: select a dataset, then append (MEMBER) if needed.',
+    HLQ);
+  if Trim(HLQ) = '' then Exit;
+
+  DsList := TStringList.Create;
+  try
+    SetBusy('Listing datasets under ' + UpperCase(Trim(HLQ)) + '...');
+    try
+      ZoweListDatasetsAll(HLQ, DsList);
+    finally
+      SetReady;
+    end;
+
+    if DsList.Count > 0 then
+    begin
+      if not ShowDatasetBrowser('Download from MVS',
+        'Select a dataset to download (' + IntToStr(DsList.Count) + ' found):',
+        DsList, '', Dataset) then Exit;
+    end
+    else
+    begin
+      { Nothing found – if input has a dot it may be a full PDS name }
+      if Pos('.', UpperCase(Trim(HLQ))) > 0 then
+      begin
+        if not ShowMemberBrowser(UpperCase(Trim(HLQ)), Dataset) then
+        begin
+          Dataset := InputBox('Download from MVS',
+            'No datasets or members found under "' + UpperCase(Trim(HLQ)) + '".'#10 +
+            'Enter full dataset name (e.g. HLQ.MYJCL or HLQ.PDS(MEMBER)):',
+            UpperCase(Trim(HLQ)));
+        end;
+      end
+      else
+        Dataset := InputBox('Download from MVS',
+          'No datasets found under "' + UpperCase(Trim(HLQ)) + '".'#10 +
+          'Enter full dataset name (e.g. HLQ.MYJCL or HLQ.PDS(MEMBER)):',
+          UpperCase(Trim(HLQ)));
+      if Trim(Dataset) = '' then Exit;
+    end;
+  finally
+    DsList.Free;
+  end;
+
+  Dataset := UpperCase(Trim(Dataset));
+  if Dataset = '' then Exit;
   if not ConfirmSave then Exit;
 
   TF := TempFile('txt');
@@ -745,7 +796,7 @@ begin
   end;
   try SysUtils.DeleteFile(TF); except end;
 
-  FCurrentDataset := UpperCase(Trim(Dataset));
+  FCurrentDataset := Dataset;
   FCurrentFile    := '';
   SetModified(False);
   StatusBar1.Panels[1].Text := 'Dataset: ' + FCurrentDataset;
@@ -757,20 +808,68 @@ end;
 
 procedure TMainForm.MnuZoweUploadClick(Sender: TObject);
 var
+  HLQ:     string;
   Dataset: string;
   TF:      string;
   R:       TZoweResult;
+  DsList:  TStringList;
   Default: string;
+  P:       Integer;
 begin
-  { Prefer the last-used upload target; fall back to the current dataset }
+  { Derive a default HLQ from the last-used upload target or current dataset }
   Default := FLastUploadDataset;
   if Default = '' then Default := FCurrentDataset;
+  HLQ := Default;
+  P   := Pos('.', HLQ);
+  if P > 1 then HLQ := Copy(HLQ, 1, P - 1);
 
-  Dataset := InputBox('Upload Editor Content to MVS',
-    'Enter target dataset or PDS member' + #10 +
-    '(e.g. HLQ.DATA  or  HLQ.PDS(MEMBER)):',
-    Default);
-  if Trim(Dataset) = '' then Exit;
+  HLQ := InputBox('Upload Editor Content to MVS',
+    'Enter HLQ to browse (e.g. SYS1):'#10 +
+    'Tip: select a dataset, then append (MEMBER) if needed.',
+    HLQ);
+  if Trim(HLQ) = '' then Exit;
+
+  DsList := TStringList.Create;
+  try
+    SetBusy('Listing datasets under ' + UpperCase(Trim(HLQ)) + '...');
+    try
+      ZoweListDatasetsAll(HLQ, DsList);
+    finally
+      SetReady;
+    end;
+
+    if DsList.Count > 0 then
+    begin
+      if not ShowDatasetBrowser('Upload Editor Content to MVS',
+        'Select target dataset (' + IntToStr(DsList.Count) + ' found):',
+        DsList, Default, Dataset) then Exit;
+    end
+    else
+    begin
+      { Nothing found – if input has a dot it may be a full PDS name }
+      if Pos('.', UpperCase(Trim(HLQ))) > 0 then
+      begin
+        if not ShowMemberBrowser(UpperCase(Trim(HLQ)), Dataset) then
+        begin
+          Dataset := InputBox('Upload Editor Content to MVS',
+            'No datasets or members found under "' + UpperCase(Trim(HLQ)) + '".'#10 +
+            'Enter target dataset name (e.g. HLQ.DATA or HLQ.PDS(MEMBER)):',
+            UpperCase(Trim(HLQ)));
+        end;
+      end
+      else
+        Dataset := InputBox('Upload Editor Content to MVS',
+          'No datasets found under "' + UpperCase(Trim(HLQ)) + '".'#10 +
+          'Enter target dataset name (e.g. HLQ.DATA or HLQ.PDS(MEMBER)):',
+          UpperCase(Trim(HLQ)));
+      if Trim(Dataset) = '' then Exit;
+    end;
+  finally
+    DsList.Free;
+  end;
+
+  Dataset := Trim(Dataset);
+  if Dataset = '' then Exit;
 
   TF := TempFile('txt');
   try
@@ -797,8 +896,8 @@ begin
     Exit;
   end;
 
-  FCurrentDataset     := UpperCase(Trim(Dataset));
-  FLastUploadDataset  := FCurrentDataset;
+  FCurrentDataset    := UpperCase(Trim(Dataset));
+  FLastUploadDataset := FCurrentDataset;
   StatusBar1.Panels[1].Text := 'Dataset: ' + FCurrentDataset;
   StatusBar1.Panels[0].Text := 'Uploaded to ' + FCurrentDataset;
   ShowMessage('Dataset uploaded successfully to ' + FCurrentDataset);
@@ -812,21 +911,71 @@ var
   R:         TZoweResult;
   Ans:       Integer;
   Binary:    Boolean;
+  HLQ:       string;
+  DsList:    TStringList;
+  Default:   string;
+  P:         Integer;
 begin
   { Step 1: choose local file }
   UploadDialog.FileName := '';
   if not UploadDialog.Execute then Exit;
   LocalFile := UploadDialog.FileName;
 
-  { Step 2: choose MVS target, defaulting to last used name }
-  Dataset := InputBox('Upload Local File to MVS',
-    'File: ' + ExtractFileName(LocalFile) + #10 +
-    'Enter target dataset or PDS member' + #10 +
-    '(e.g. HLQ.DATA  or  HLQ.PDS(MEMBER)):',
-    FLastUploadDataset);
-  if Trim(Dataset) = '' then Exit;
+  { Step 2: browse MVS datasets }
+  Default := FLastUploadDataset;
+  HLQ := Default;
+  P   := Pos('.', HLQ);
+  if P > 1 then HLQ := Copy(HLQ, 1, P - 1);
 
-  Dataset := UpperCase(Trim(Dataset));
+  HLQ := InputBox('Upload Local File to MVS',
+    'File: ' + ExtractFileName(LocalFile) + #10 +
+    'Enter HLQ to browse (e.g. SYS1):'#10 +
+    'Tip: select a dataset, then append (MEMBER) if needed.',
+    HLQ);
+  if Trim(HLQ) = '' then Exit;
+
+  DsList := TStringList.Create;
+  try
+    SetBusy('Listing datasets under ' + UpperCase(Trim(HLQ)) + '...');
+    try
+      ZoweListDatasetsAll(HLQ, DsList);
+    finally
+      SetReady;
+    end;
+
+    if DsList.Count > 0 then
+    begin
+      if not ShowDatasetBrowser('Upload Local File to MVS',
+        'File: ' + ExtractFileName(LocalFile) + #10 +
+        'Select target dataset (' + IntToStr(DsList.Count) + ' found):',
+        DsList, Default, Dataset) then Exit;
+    end
+    else
+    begin
+      { Nothing found – if input has a dot it may be a full PDS name }
+      if Pos('.', UpperCase(Trim(HLQ))) > 0 then
+      begin
+        if not ShowMemberBrowser(UpperCase(Trim(HLQ)), Dataset) then
+        begin
+          Dataset := InputBox('Upload Local File to MVS',
+            'No datasets or members found under "' + UpperCase(Trim(HLQ)) + '".'#10 +
+            'Enter target dataset name (e.g. HLQ.DATA or HLQ.PDS(MEMBER)):',
+            UpperCase(Trim(HLQ)));
+        end;
+      end
+      else
+        Dataset := InputBox('Upload Local File to MVS',
+          'No datasets found under "' + UpperCase(Trim(HLQ)) + '".'#10 +
+          'Enter target dataset name (e.g. HLQ.DATA or HLQ.PDS(MEMBER)):',
+          UpperCase(Trim(HLQ)));
+      if Trim(Dataset) = '' then Exit;
+    end;
+  finally
+    DsList.Free;
+  end;
+
+  Dataset := Trim(Dataset);
+  if Dataset = '' then Exit;
 
   { Step 3: choose transfer mode }
   Ans := QuestionDlg('Transfer Mode',
