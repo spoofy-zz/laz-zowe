@@ -104,5 +104,8 @@
         <DebugInfoType Value="dsDwarf3"/>
       </Debugging>
     </Linking>
+    <Other>
+      <CustomOptions Value="-k-ld_classic"/>
+    </Other>
   </CompilerOptions>
 </CONFIG>

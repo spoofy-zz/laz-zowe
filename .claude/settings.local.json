@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(./build.sh:*)",
+      "Bash(git checkout:*)",
+      "Bash(git:*)",
+      "Bash(python3:*)",
+      "Bash(touch:*)",
+      "Bash(open:*)",
+      "Bash(fpc:*)",
+      "Bash(lazbuild:*)",
+      "Bash(bash:*)",
+      "Bash(/usr/bin/git:*)",
+      "Bash(grep:*)",
+      "Bash(cp:*)",
+      "Bash(/usr/libexec/PlistBuddy:*)",
+      "Read(//Applications/lazarus/lcl/interfaces/cocoa/**)",
+      "Read(//Applications/lazarus/lcl/interfaces/**)",
+      "Bash(ld -version_details)",
+      "Bash(xcodebuild -version)",
+      "Bash(ld -ld_classic#)"
+    ]
+  }
+}
